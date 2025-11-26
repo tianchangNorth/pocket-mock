@@ -64,19 +64,19 @@ export const initStore = async () => {
     }
 
     // --- 阶段三：完全没数据，使用默认 Demo ---
-    const defaultRules = [{
-      id: 'demo-1',
-      url: '/api/demo',
-      method: 'GET',
-      response: { msg: 'Hello PocketMock' },
-      enabled: true,
-      delay: 500,
-      status: 200,
-      headers: {}
-    }];
+    // const defaultRules = [{
+    //   id: 'demo-1',
+    //   url: '/api/demo',
+    //   method: 'GET',
+    //   response: { msg: 'Hello PocketMock' },
+    //   enabled: true,
+    //   delay: 500,
+    //   status: 200,
+    //   headers: {}
+    // }];
 
-    rules.set(defaultRules);
-    console.log('[PocketMock] Created default rules');
+    // rules.set(defaultRules);
+    console.log('[PocketMock] No rules found, starting empty.');
 
   } finally {
     // 修改 3: 这里的代码是“救命稻草”，无论上面发生了什么（报错、return、成功），这里都会执行
@@ -157,4 +157,12 @@ export const updateRuleHeaders = (id: string, newHeadersJson: string) => {
 
 export const updateRuleStatus = (id: string, status: number) => {
   rules.update(items => items.map(r => r.id === id ? { ...r, status } : r));
+};
+
+export const updateRuleMethod = (id: string, method: string) => {
+  rules.update(items => items.map(r => r.id === id ? { ...r, method } : r));
+};
+
+export const updateRuleUrl = (id: string, url: string) => {
+  rules.update(items => items.map(r => r.id === id ? { ...r, url } : r));
 };
