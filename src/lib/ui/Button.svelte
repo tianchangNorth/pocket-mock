@@ -46,39 +46,39 @@
 
   /* Variants */
   .pm-btn.primary {
-    background: #646cff;
+    background: var(--pm-primary, #646cff);
     color: white;
   }
   .pm-btn.primary:hover {
-    background: #747bff;
+    background: var(--pm-primary-hover, #747bff);
   }
 
   .pm-btn.secondary {
-    background: #3a3a3a;
-    color: #e0e0e0;
+    background: var(--pm-btn-secondary-bg, #3a3a3a);
+    color: var(--pm-text-primary, #e0e0e0);
     border: 1px solid transparent;
   }
   .pm-btn.secondary:hover {
-    background: #4a4a4a;
-    color: white;
+    background: var(--pm-btn-secondary-hover, #4a4a4a);
+    color: var(--pm-text-primary, white);
   }
 
   .pm-btn.danger {
-    background: rgba(255, 70, 70, 0.1);
-    color: #ff4646;
+    background: var(--pm-danger-bg, rgba(255, 70, 70, 0.1));
+    color: var(--pm-danger, #ff4646);
     border: 1px solid transparent;
   }
   .pm-btn.danger:hover {
-    background: rgba(255, 70, 70, 0.2);
-    border-color: rgba(255, 70, 70, 0.3);
+    background: var(--pm-danger-bg-hover, rgba(255, 70, 70, 0.2));
+    border-color: var(--pm-danger-border, rgba(255, 70, 70, 0.3));
   }
 
   .pm-btn.ghost {
     background: transparent;
-    color: #888;
+    color: var(--pm-text-secondary, #888);
   }
   .pm-btn.ghost:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: #fff;
+    background: var(--pm-hover-bg, rgba(255, 255, 255, 0.05));
+    color: var(--pm-text-primary, #fff);
   }
 </style>

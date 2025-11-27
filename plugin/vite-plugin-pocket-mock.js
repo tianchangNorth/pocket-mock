@@ -57,21 +57,22 @@ export default function pocketMockPlugin() {
               const data = fs.readFileSync(configPath, 'utf-8');
 
               // Check if file is empty or contains invalid JSON
-              if (!data.trim() || data.trim() === '[]') {
-                console.log(`[PocketMock] Config file is empty, creating default rules`);
-                const defaultRules = createDefaultRules();
-                fs.writeFileSync(configPath, JSON.stringify(defaultRules, null, 2));
+              if (!data.trim()) {
+                console.log(`[PocketMock] Config file is empty, returning empty array`);
                 res.setHeader('Content-Type', 'application/json');
-                res.end(JSON.stringify(defaultRules));
-                console.log(`[PocketMock] Created and returned default rules`);
+                res.end('[]');
+              } else if (data.trim() === '[]') {
+                console.log(`[PocketMock] Config file contains empty array, returning as is`);
+                res.setHeader('Content-Type', 'application/json');
+                res.end('[]');
               } else {
                 res.setHeader('Content-Type', 'application/json');
                 res.end(data);
                 console.log(`[PocketMock] Read config file: ${CONFIG_FILE_NAME}`);
               }
             } else {
-              // If file doesn't exist, create it with default rules
-              console.log(`[PocketMock] Config file not found, creating with default rules`);
+              // If file doesn't exist, create it with default rules only for first-time use
+              console.log(`[PocketMock] Config file not found, creating with default rules for first-time use`);
               const defaultRules = createDefaultRules();
               fs.writeFileSync(configPath, JSON.stringify(defaultRules, null, 2));
               res.setHeader('Content-Type', 'application/json');

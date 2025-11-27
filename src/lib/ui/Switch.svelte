@@ -18,7 +18,7 @@
   .pm-switch {
     width: 36px;
     height: 20px;
-    background: #3a3a3a;
+    background: var(--pm-switch-off, #3a3a3a);
     border-radius: 10px;
     position: relative;
     cursor: pointer;
@@ -26,7 +26,7 @@
   }
 
   .pm-switch.checked {
-    background: #646cff;
+    background: var(--pm-primary, #646cff);
   }
 
   .pm-switch-thumb {

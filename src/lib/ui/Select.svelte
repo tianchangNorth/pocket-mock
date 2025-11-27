@@ -11,7 +11,7 @@
     {/each}
   </select>
   <svg class="pm-select-arrow" width="10" height="6" viewBox="0 0 10 6" fill="none">
-    <path d="M1 1L5 5L9 1" stroke="#888" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>
 </div>
 
@@ -20,6 +20,7 @@
     position: relative;
     display: inline-block;
     width: 100%;
+    color: var(--pm-text-secondary, #888);
   }
 
   .pm-select {
@@ -27,10 +28,10 @@
     -webkit-appearance: none;
     width: 100%;
     padding: 8px 32px 8px 12px;
-    background: #2a2a2a;
-    border: 1px solid #3a3a3a;
+    background: var(--pm-input-bg, #2a2a2a);
+    border: 1px solid var(--pm-border, #3a3a3a);
     border-radius: 4px;
-    color: #fff;
+    color: var(--pm-text-primary, #fff);
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     font-size: 13px;
     outline: none;
@@ -40,8 +41,8 @@
   }
 
   .pm-select:focus {
-    border-color: #646cff;
-    background: #333;
+    border-color: var(--pm-primary, #646cff);
+    background: var(--pm-input-bg-focus, #333);
   }
 
   .pm-select-arrow {
@@ -50,5 +51,9 @@
     top: 50%;
     transform: translateY(-50%);
     pointer-events: none;
+  }
+  
+  .pm-select-arrow path {
+    stroke: var(--pm-text-secondary, #888);
   }
 </style>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { rules, toggleRule, updateRuleResponse, addRule, deleteRule, updateRuleDelay, updateRuleStatus, updateRuleHeaders, updateRuleMethod, updateRuleUrl } from '../core/store';
   import { requestLogs } from '../core/log-store';
   import Button from './ui/Button.svelte';
@@ -75,10 +76,132 @@
   function cancelEdit() {
     editingId = null;
   }
+
+  // Draggable logic
+  let isDragging = false;
+  let startX = 0;
+  let startY = 0;
+  let initialRight = 0; // Anchor to RIGHT
+  let initialBottom = 0; // Anchor to BOTTOM
+  let containerRef: HTMLDivElement;
+  
+  // Remove reactive position state to avoid re-renders during drag
+  // let position = { x: -1, y: -1 }; 
+
+  // Normalize position on mount to ensure consistent behavior
+  // Lock to bottom/right coordinates to match CSS initial state
+  onMount(() => {
+    if (containerRef) {
+      const rect = containerRef.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      
+      // Calculate distances
+      const right = viewportWidth - rect.right;
+      const bottom = viewportHeight - rect.bottom;
+      
+      containerRef.style.top = 'auto';
+      containerRef.style.left = 'auto';
+      containerRef.style.right = `${right}px`;
+      containerRef.style.bottom = `${bottom}px`;
+    }
+  });
+
+  function handleMouseDown(e: MouseEvent) {
+    // Only allow dragging from header, ignore buttons
+    if ((e.target as HTMLElement).closest('button')) return;
+    
+    isDragging = true;
+    startX = e.clientX;
+    startY = e.clientY;
+    
+    const rect = containerRef.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    // Calculate initial anchors
+    initialRight = viewportWidth - rect.right;
+    initialBottom = viewportHeight - rect.bottom;
+    
+    // Ensure we are using bottom/right positioning
+    containerRef.style.top = 'auto';
+    containerRef.style.left = 'auto';
+    containerRef.style.right = `${initialRight}px`;
+    containerRef.style.bottom = `${initialBottom}px`;
+    
+    // Disable transition during drag for instant follow
+    containerRef.style.transition = 'none';
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+  }
+
+  function handleMouseMove(e: MouseEvent) {
+    if (!isDragging) return;
+    
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    
+    let newRight = initialRight - dx;
+    let newBottom = initialBottom - dy;
+
+    // Boundary clamping
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const width = containerRef.offsetWidth;
+    const height = containerRef.offsetHeight;
+
+    // Prevent going off-screen right
+    if (newRight < 0) newRight = 0;
+    // Prevent going off-screen left
+    if (newRight > viewportWidth - width) newRight = viewportWidth - width;
+
+    // Prevent going off-screen bottom
+    if (newBottom < 0) newBottom = 0;
+    // Prevent going off-screen top (ensure header stays visible)
+    if (newBottom > viewportHeight - height) newBottom = viewportHeight - height;
+
+    // Update styles
+    containerRef.style.right = `${newRight}px`;
+    containerRef.style.bottom = `${newBottom}px`;
+  }
+
+  function handleMouseUp() {
+    isDragging = false;
+    // Restore transition for minimize/expand animations
+    if (containerRef) {
+       containerRef.style.transition = '';
+    }
+    window.removeEventListener('mousemove', handleMouseMove);
+    window.removeEventListener('mouseup', handleMouseUp);
+  }
+
+  $: if (!minimized && containerRef) {
+    const viewportHeight = window.innerHeight;
+    // Match CSS max-height constraints
+    const maxHeight = Math.min(600, viewportHeight * 0.85);
+    
+    // Get current bottom value
+    const currentBottom = parseFloat(containerRef.style.bottom) || 0;
+    
+    // Calculate where the top would be after expansion
+    const projectedTop = viewportHeight - currentBottom - maxHeight;
+    
+    // If top would be off-screen (or too close to top), shift down
+    if (projectedTop < 24) {
+      const newBottom = Math.max(0, viewportHeight - maxHeight - 24);
+      containerRef.style.bottom = `${newBottom}px`;
+    }
+  }
 </script>
 
-<div class="container" class:minimized={minimized}>
-  <div class="header">
+<div 
+  class="container" 
+  class:minimized={minimized} 
+  bind:this={containerRef}
+>
+  <!-- svelte-ignore a11y-no-static-element-interactions -->
+  <div class="header" on:mousedown={handleMouseDown}>
     <div class="title-area">
       <h3>PocketMock</h3>
       {#if minimized && $rules.length > 0}
@@ -97,12 +220,12 @@
     
     <button class="toggle-btn" on:click={() => minimized = !minimized} title={minimized ? 'Expand panel' : 'Collapse panel'}>
       {#if minimized}
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-          <path d="M3 5h6v2H3z"/>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 5v14M5 12h14"/>
         </svg>
       {:else}
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-          <path d="M3 7l3-3 3 3z"/>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M5 12h14"/>
         </svg>
       {/if}
     </button>
@@ -212,22 +335,26 @@
 
                   <div class="editor-content">
                     {#if activeTab === 'config'}
-                      <div class="config-grid" role="tabpanel" aria-labelledby="config-tab">
+                      <div class="config-grid">
+                         <!-- svelte-ignore a11y-label-has-associated-control -->
                          <div class="field-group">
-                            <label for="method-select">Method</label>
-                            <Select bind:value={editMethod} options={METHODS} id="method-select" />
+                            <label>Method</label>
+                            <Select bind:value={editMethod} options={METHODS} />
                          </div>
+                         <!-- svelte-ignore a11y-label-has-associated-control -->
                          <div class="field-group url-group">
-                            <label for="url-input">URL Pattern</label>
-                            <Input bind:value={editUrl} id="url-input" />
+                            <label>URL Pattern</label>
+                            <Input bind:value={editUrl} />
                          </div>
+                         <!-- svelte-ignore a11y-label-has-associated-control -->
                          <div class="field-group">
-                            <label for="status-input">Status</label>
-                            <Input type="number" bind:value={editStatus} id="status-input" />
+                            <label>Status</label>
+                            <Input type="number" bind:value={editStatus} />
                          </div>
+                         <!-- svelte-ignore a11y-label-has-associated-control -->
                          <div class="field-group">
-                            <label for="delay-input">Delay (ms)</label>
-                            <Input type="number" bind:value={editDelay} id="delay-input" />
+                            <label>Delay (ms)</label>
+                            <Input type="number" bind:value={editDelay} />
                          </div>
                       </div>
                     {:else if activeTab === 'body'}
@@ -256,6 +383,8 @@
                 </div>
               {:else}
                 <!-- Preview Mode -->
+                <!-- svelte-ignore a11y-click-events-have-key-events -->
+                <!-- svelte-ignore a11y-no-static-element-interactions -->
                 <div
                   class="card-header"
                   role="button"
@@ -273,6 +402,7 @@
                     <span class="badge method" class:GET={rule.method === 'GET'} class:POST={rule.method === 'POST'} class:PUT={rule.method === 'PUT'} class:DELETE={rule.method === 'DELETE'}>{rule.method}</span>
                     <span class="url" title={rule.url}>{rule.url}</span>
                   </div>
+                  <!-- svelte-ignore a11y-no-static-element-interactions -->
                   <div class="header-actions" role="button" tabindex="-1" on:click|stopPropagation on:keydown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
@@ -283,6 +413,8 @@
                     <Switch checked={rule.enabled} onChange={() => toggleRule(rule.id)} />
                   </div>
                 </div>
+                <!-- svelte-ignore a11y-click-events-have-key-events -->
+                <!-- svelte-ignore a11y-no-static-element-interactions -->
                 <div
                   class="card-meta"
                   role="button"
@@ -335,14 +467,45 @@
   * { box-sizing: border-box; }
 
   .container {
+    /* --- Theme Variables (Default: Dark) --- */
+    --pm-bg: #1a1a1a;
+    --pm-bg-secondary: #252525; /* Cards, Log items */
+    --pm-bg-tertiary: #2a2a2a; /* Editor, Minimized */
+    
+    --pm-border: rgba(255,255,255,0.08);
+    --pm-border-focus: rgba(255,255,255,0.2);
+    
+    --pm-text-primary: #e0e0e0;
+    --pm-text-secondary: #888;
+    --pm-text-placeholder: #666;
+    
+    --pm-primary: #646cff;
+    --pm-primary-hover: #747bff;
+    
+    --pm-danger: #ff4646;
+    --pm-danger-bg: rgba(255, 70, 70, 0.1);
+    
+    --pm-shadow: 0 10px 40px rgba(0,0,0,0.4);
+    --pm-hover-bg: rgba(255,255,255,0.05);
+
+    /* Component specific mappings */
+    --pm-input-bg: #111;
+    --pm-input-bg-focus: #000;
+    
+    --pm-btn-secondary-bg: #333;
+    --pm-btn-secondary-hover: #444;
+    
+    --pm-switch-off: #444;
+
+    /* Layout */
     position: fixed;
     bottom: 24px;
     right: 24px;
     width: 400px;
-    background: #1a1a1a;
-    color: #e0e0e0;
+    background: var(--pm-bg);
+    color: var(--pm-text-primary);
     border-radius: 12px;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.1);
+    box-shadow: var(--pm-shadow), 0 0 0 1px var(--pm-border);
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     font-size: 13px;
     line-height: 1.5;
@@ -355,11 +518,44 @@
     overflow: hidden;
   }
 
+  /* Light Mode Override */
+  @media (prefers-color-scheme: light) {
+    .container {
+      --pm-bg: #ffffff;
+      --pm-bg-secondary: #ffffff;
+      --pm-bg-tertiary: #f8fafc;
+      
+      --pm-border: #e2e8f0;
+      --pm-border-focus: #cbd5e1;
+      
+      --pm-text-primary: #1e293b;
+      --pm-text-secondary: #64748b;
+      --pm-text-placeholder: #94a3b8;
+      
+      --pm-primary: #2563eb;
+      --pm-primary-hover: #1d4ed8;
+      
+      --pm-danger: #dc2626;
+      --pm-danger-bg: #fee2e2;
+      
+      --pm-shadow: 0 10px 30px -5px rgba(0,0,0,0.15);
+      --pm-hover-bg: rgba(0,0,0,0.04);
+
+      --pm-input-bg: #fff;
+      --pm-input-bg-focus: #fff;
+      
+      --pm-btn-secondary-bg: #fff;
+      --pm-btn-secondary-hover: #f1f5f9;
+      
+      --pm-switch-off: #e2e8f0;
+    }
+  }
+
   .container.minimized {
     width: auto;
     min-width: 140px;
     height: auto;
-    background: #2a2a2a;
+    background: var(--pm-bg-tertiary);
   }
 
   /* Header */
@@ -368,50 +564,35 @@
     justify-content: space-between;
     align-items: center;
     padding: 12px 16px;
-    background: rgba(255,255,255,0.03);
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-    min-height: 48px; /* Fixed minimum height */
+    background: var(--pm-bg-tertiary); /* Lighter/Darker header background */
+    border-bottom: 1px solid var(--pm-border);
   }
 
   .title-area {
     display: flex;
     align-items: center;
     gap: 10px;
-    min-height: 24px; /* Ensure consistent title area height */
   }
 
   h3 {
     margin: 0;
     font-size: 14px;
     font-weight: 600;
-    color: #fff;
+    color: var(--pm-text-primary);
   }
 
   .rule-count {
-    background: #333;
+    background: var(--pm-hover-bg);
     padding: 1px 6px;
     border-radius: 4px;
     font-size: 11px;
-    color: #888;
-  }
-
-  .add-btn-wrapper {
-    min-width: 32px; /* Ensure consistent width */
-    min-height: 24px; /* Ensure consistent height */
-    opacity: 0;
-    transition: opacity 0.2s;
-    pointer-events: none;
-  }
-
-  .add-btn-wrapper.visible {
-    opacity: 1;
-    pointer-events: auto;
+    color: var(--pm-text-secondary);
   }
 
   .toggle-btn {
     background: transparent;
     border: none;
-    color: #666;
+    color: var(--pm-text-secondary);
     cursor: pointer;
     padding: 4px;
     border-radius: 4px;
@@ -419,17 +600,16 @@
   }
 
   .toggle-btn:hover {
-    color: #fff;
-    background: rgba(255,255,255,0.1);
+    color: var(--pm-text-primary);
+    background: var(--pm-hover-bg);
   }
 
   /* Tabs */
   .main-tabs {
     display: flex;
     padding: 0 16px;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-    height: 44px; /* Fixed height for tab bar */
-    box-sizing: border-box;
+    border-bottom: 1px solid var(--pm-border);
+    background: var(--pm-bg-tertiary);
   }
 
   .main-tab-btn {
@@ -437,25 +617,21 @@
     padding: 10px;
     background: transparent;
     border: none;
-    color: #666;
+    color: var(--pm-text-secondary);
     font-weight: 500;
     cursor: pointer;
     border-bottom: 2px solid transparent;
     transition: all 0.2s;
-    height: 100%;
-    box-sizing: border-box;
-    display: flex;
-    align-items: center;
-    justify-content: center;
   }
 
   .main-tab-btn:hover {
-    color: #bbb;
+    color: var(--pm-text-primary);
+    background: var(--pm-hover-bg);
   }
 
   .main-tab-btn.active {
-    color: #646cff;
-    border-bottom-color: #646cff;
+    color: var(--pm-primary);
+    border-bottom-color: var(--pm-primary);
   }
 
   /* Content */
@@ -463,15 +639,16 @@
     padding: 16px;
     overflow-y: auto;
     flex: 1;
+    background: var(--pm-bg-secondary); /* Main content area bg */
   }
 
   /* Add Panel */
   .add-panel {
-    background: #252525;
+    background: var(--pm-bg-tertiary);
     padding: 12px;
     border-radius: 8px;
     margin-bottom: 16px;
-    border: 1px solid rgba(255,255,255,0.05);
+    border: 1px solid var(--pm-border);
   }
 
   .form-row {
@@ -490,7 +667,7 @@
   .empty-state {
     text-align: center;
     padding: 40px 20px;
-    color: #666;
+    color: var(--pm-text-secondary);
   }
 
   .empty-icon {
@@ -501,26 +678,28 @@
   .sub-text {
     font-size: 12px;
     margin-top: 4px;
-    color: #444;
+    color: var(--pm-text-secondary);
+    opacity: 0.8;
   }
 
   /* Card */
   .card {
-    background: #252525;
+    background: var(--pm-bg); /* Card stands out from secondary bg */
     border-radius: 8px;
     margin-bottom: 12px;
-    border: 1px solid rgba(255,255,255,0.05);
+    border: 1px solid var(--pm-border);
     transition: transform 0.2s, border-color 0.2s;
     overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
   }
 
   .card:hover {
-    border-color: rgba(255,255,255,0.15);
+    border-color: var(--pm-border-focus);
     transform: translateY(-1px);
   }
 
   .card.editing {
-    border-color: #646cff;
+    border-color: var(--pm-primary);
     transform: none;
   }
 
@@ -546,26 +725,26 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: #ccc;
+    color: var(--pm-text-primary);
   }
 
   .card-meta {
     padding: 0 12px 12px;
     font-size: 11px;
-    color: #666;
+    color: var(--pm-text-secondary);
     display: flex;
     gap: 12px;
     cursor: pointer;
   }
 
   .card-meta b {
-    color: #888;
+    color: var(--pm-text-primary);
     font-weight: normal;
   }
 
   /* Editor Mode */
   .editor-container {
-    background: #2a2a2a;
+    background: var(--pm-bg-tertiary);
   }
 
   .editor-header {
@@ -573,8 +752,8 @@
     justify-content: space-between;
     align-items: center;
     padding: 8px 12px;
-    background: rgba(0,0,0,0.2);
-    border-bottom: 1px solid rgba(255,255,255,0.05);
+    background: var(--pm-hover-bg);
+    border-bottom: 1px solid var(--pm-border);
   }
 
   .editor-tabs {
@@ -585,7 +764,7 @@
   .editor-tabs button {
     background: transparent;
     border: none;
-    color: #666;
+    color: var(--pm-text-secondary);
     padding: 4px 8px;
     font-size: 11px;
     cursor: pointer;
@@ -593,14 +772,15 @@
   }
 
   .editor-tabs button:hover {
-    color: #ccc;
-    background: rgba(255,255,255,0.05);
+    color: var(--pm-text-primary);
+    background: var(--pm-hover-bg);
   }
 
   .editor-tabs button.active {
-    color: #fff;
-    background: rgba(255,255,255,0.1);
+    color: var(--pm-text-primary);
+    background: var(--pm-hover-bg);
     font-weight: 500;
+    background: rgba(125,125,125,0.1);
   }
 
   .editor-content {
@@ -620,17 +800,17 @@
   .field-group label {
     display: block;
     font-size: 11px;
-    color: #666;
+    color: var(--pm-text-secondary);
     margin-bottom: 4px;
   }
 
   .code-editor {
     width: 100%;
     min-height: 150px;
-    background: #151515;
-    border: 1px solid #333;
+    background: var(--pm-input-bg);
+    border: 1px solid var(--pm-border);
     border-radius: 4px;
-    color: #a5d6ff;
+    color: var(--pm-text-primary);
     font-family: 'Menlo', 'Monaco', monospace;
     font-size: 12px;
     padding: 8px;
@@ -639,7 +819,7 @@
   }
 
   .code-editor:focus {
-    border-color: #646cff;
+    border-color: var(--pm-primary);
   }
 
   .editor-footer {
@@ -647,8 +827,8 @@
     display: flex;
     justify-content: flex-end;
     gap: 8px;
-    border-top: 1px solid rgba(255,255,255,0.05);
-    background: rgba(0,0,0,0.2);
+    border-top: 1px solid var(--pm-border);
+    background: var(--pm-hover-bg);
   }
 
   /* Badges */
@@ -659,10 +839,11 @@
     font-weight: bold;
     text-transform: uppercase;
   }
-  .method.GET { background: rgba(37, 99, 235, 0.2); color: #60a5fa; }
-  .method.POST { background: rgba(5, 150, 105, 0.2); color: #34d399; }
-  .method.PUT { background: rgba(217, 119, 6, 0.2); color: #fbbf24; }
-  .method.DELETE { background: rgba(220, 38, 38, 0.2); color: #f87171; }
+  .method.GET { background: rgba(37, 99, 235, 0.15); color: #3b82f6; }
+  .method.POST { background: rgba(5, 150, 105, 0.15); color: #10b981; }
+  .method.PUT { background: rgba(217, 119, 6, 0.15); color: #f59e0b; }
+  .method.DELETE { background: rgba(220, 38, 38, 0.15); color: #ef4444; }
+  /* Adjust method colors for light mode visibility if needed, or stick to generic accessible colors */
 
   /* Logs */
   .network-logs {
@@ -672,10 +853,10 @@
   }
 
   .log-item {
-    background: #252525;
+    background: var(--pm-bg);
     padding: 8px 12px;
     border-radius: 6px;
-    border: 1px solid rgba(255,255,255,0.05);
+    border: 1px solid var(--pm-border);
   }
 
   .log-header {
@@ -689,11 +870,11 @@
     font-family: monospace;
     font-weight: bold;
   }
-  .status-badge.success { color: #34d399; }
-  .status-badge.error { color: #f87171; }
+  .status-badge.success { color: #10b981; }
+  .status-badge.error { color: #ef4444; }
 
   .log-url {
-    color: #ccc;
+    color: var(--pm-text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -703,7 +884,7 @@
   .log-meta {
     display: flex;
     justify-content: space-between;
-    color: #666;
+    color: var(--pm-text-secondary);
     font-size: 11px;
   }
 </style>

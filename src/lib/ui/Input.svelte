@@ -27,10 +27,10 @@
   .pm-input {
     width: 100%;
     padding: 8px 12px;
-    background: #2a2a2a;
-    border: 1px solid #3a3a3a;
+    background: var(--pm-input-bg, #2a2a2a);
+    border: 1px solid var(--pm-border, #3a3a3a);
     border-radius: 4px;
-    color: #fff;
+    color: var(--pm-text-primary, #fff);
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     font-size: 13px;
     outline: none;
@@ -39,11 +39,21 @@
   }
 
   .pm-input:focus {
-    border-color: #646cff;
-    background: #333;
+    border-color: var(--pm-primary, #646cff);
+    background: var(--pm-input-bg-focus, #333);
   }
 
   .pm-input::placeholder {
-    color: #666;
+    color: var(--pm-text-placeholder, #666);
+  }
+
+  /* Hide spinner/stepper for number inputs */
+  .pm-input[type="number"]::-webkit-inner-spin-button,
+  .pm-input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .pm-input[type="number"] {
+    -moz-appearance: textfield; /* Firefox */
   }
 </style>
