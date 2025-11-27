@@ -31,9 +31,12 @@
       ]
     });
 
+    const root = editorContainer.getRootNode();
+
     editorView = new EditorView({
       state: startState,
-      parent: editorContainer
+      parent: editorContainer,
+      root: root as Document | ShadowRoot
     });
   });
 
