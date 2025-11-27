@@ -1,17 +1,9 @@
 import { requestLogs } from "./log-store";
 import { appReady } from './store';
 import { matchRoute } from './matcher';
+import type { MockRequest, MockRule } from './types'; // Use shared types
 
-export interface MockRule {
-  id: string;
-  url: string;
-  method: string;
-  response: any;
-  enabled: boolean;
-  delay: number;
-  status: number;
-  headers: Record<string, string>
-}
+export type { MockRule }; // Re-export for consumers if needed
 
 // Current rule list
 let activeRules: MockRule[] = []
@@ -29,16 +21,51 @@ export function updateRules(rules: MockRule[]) {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+async function createMockRequest(
+  url: string,
+  method: string,
+  headers: Headers,
+  bodyData: any, // Raw body data can be string, FormData, etc.
+  params: Record<string, string>
+): Promise<MockRequest> {
+  const urlObj = new URL(url, window.location.origin); // Fix: Provide base for relative URLs
+  const query: Record<string, string> = {};
+  urlObj.searchParams.forEach((value, key) => { // Query params from search string
+    query[key] = value;
+  });
+
+  const requestHeaders: Record<string, string> = {};
+  headers.forEach((value, key) => { // Headers iterator yields [key, value]
+    requestHeaders[key] = value;
+  });
+  
+  let jsonBody: any = undefined;
+  const contentType = requestHeaders['content-type'] || '';
+  if (bodyData && typeof bodyData === 'string' && contentType.includes('application/json')) {
+    try {
+      jsonBody = JSON.parse(bodyData);
+    } catch (e) {
+      console.warn('[PocketMock] Could not parse JSON body for MockRequest:', e);
+    }
+  }
+
+  return {
+    url: url,
+    method: method,
+    headers: requestHeaders,
+    body: bodyData,
+    json: jsonBody,
+    params: params,
+    query: query,
+  };
+}
+
 export function patchFetch() {
   const originalFetch = window.fetch;
 
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    // 1. 先解析 URL，不要 await
     const url = typeof input === 'string' ? input : (input instanceof Request ? input.url : input.toString());
 
-    // 🔥【关键修复】🔥 
-    // 如果是 PocketMock 自己的内部请求，直接放行，绝对不要 await appReady！
-    // 否则会造成死锁：初始化在等 fetch，fetch 在等初始化
     if (url.includes('/__pocket_mock/')) {
       return originalFetch(input, init);
     }
@@ -46,51 +73,109 @@ export function patchFetch() {
 
     const startTime = performance.now();
     const method = (init?.method || 'GET').toUpperCase();
+    const requestHeaders = new Headers(init?.headers);
 
-    // 查找匹配且启用的规则
-    const matchedRule = activeRules.find(r => {
-      if (!r.enabled || r.method !== method) return false;
-      return matchRoute(r.url, url).match;
-    });
+    // Extract body data for createMockRequest
+    let bodyData: any = init?.body;
+    if (bodyData instanceof FormData) { // Convert FormData to object for easier access
+        const formDataObj: Record<string, string> = {};
+        for (const pair of bodyData.entries()) {
+            formDataObj[pair[0]] = pair[1].toString();
+        }
+        bodyData = formDataObj;
+    } else if (bodyData instanceof URLSearchParams) { // Convert URLSearchParams to object
+        const urlSearchParamsObj: Record<string, string> = {};
+        for (const pair of bodyData.entries()) {
+            urlSearchParamsObj[pair[0]] = pair[1].toString();
+        }
+        bodyData = urlSearchParamsObj;
+    }
 
-    if (matchedRule) {
-      console.log(`[PocketMock] Fetch拦截: ${method} ${url}`);
 
-      if (matchedRule.delay > 0) {
-        await sleep(matchedRule.delay);
+    const matchResult = activeRules.map(r => ({
+      rule: r,
+      match: matchRoute(r.url, url)
+    })).find(item => item.rule.enabled && item.rule.method === method && item.match.match);
+
+    if (matchResult) {
+      const { rule, match } = matchResult;
+      console.log(`[PocketMock] Fetch intercepted: ${method} ${url}`);
+
+      if (rule.delay > 0) {
+        await sleep(rule.delay);
+      }
+      
+      let resolvedResponse: any = rule.response;
+
+      // Hydrate string response if it looks like code (function or object literal)
+      if (typeof resolvedResponse === 'string') {
+        const trimmed = resolvedResponse.trim();
+        // Check for function signature or object/array literal
+        if (trimmed.startsWith('(') || trimmed.startsWith('function') || trimmed.includes('=>') || trimmed.startsWith('{') || trimmed.startsWith('[')) {
+          try {
+            // Safe-ish evaluation to turn string into JS object/function
+            const evaluated = new Function('return ' + resolvedResponse)();
+            resolvedResponse = evaluated;
+          } catch (e) {
+            // Keep as string if eval fails
+          }
+        }
+      }
+
+      if (typeof resolvedResponse === 'function') {
+        const mockRequest = await createMockRequest(url, method, requestHeaders, bodyData, match.params);
+        console.log('[PocketMock] Executing dynamic response with req:', mockRequest); // Debug log
+        try {
+          resolvedResponse = await Promise.resolve(resolvedResponse(mockRequest));
+        } catch (e) {
+          console.error('[PocketMock] Error executing response function:', e);
+          resolvedResponse = { status: 500, body: { error: 'Mock function execution failed' } };
+        }
       }
 
       const duration = Math.round(performance.now() - startTime);
+
+      let responseContent = resolvedResponse;
+      let responseStatus = rule.status;
+      let responseHeaders = rule.headers || {};
+
+      // Handle full Response object returned by function
+      if (resolvedResponse instanceof Response) {
+        // If the function returns a Response object, use it directly
+        requestLogs.add({
+          method,
+          url,
+          status: resolvedResponse.status,
+          timestamp: Date.now(),
+          duration,
+          isMock: true
+        });
+        return resolvedResponse;
+      }
+
+      // Handle { body, status, headers } object returned by function (or standard rule.response)
+      if (resolvedResponse && typeof resolvedResponse === 'object' && Object.prototype.hasOwnProperty.call(resolvedResponse, 'body')) {
+        responseContent = resolvedResponse.body;
+        responseStatus = resolvedResponse.status || rule.status;
+        responseHeaders = { ...responseHeaders, ...resolvedResponse.headers };
+      }
+      // Else, use resolvedResponse as direct content
+
       requestLogs.add({
         method,
         url,
-        status: matchedRule.status,
+        status: responseStatus,
         timestamp: Date.now(),
         duration,
         isMock: true
       });
-
-      // 检查响应数据格式
-      let responseContent = matchedRule.response;
-      let responseStatus = matchedRule.status;
-      let responseHeaders = matchedRule.headers || {};
-
-      if (matchedRule.response && typeof matchedRule.response === 'object') {
-        const resp = matchedRule.response;
-        if (resp.body && resp.status !== undefined) {
-          // 包装格式：{status, headers, body}
-          responseContent = resp.body;
-          responseStatus = resp.status;
-          responseHeaders = { ...responseHeaders, ...resp.headers };
-        }
-      }
 
       return new Response(
         typeof responseContent === 'string' ? responseContent : JSON.stringify(responseContent),
         {
           status: responseStatus,
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/json', // Default to JSON content type
             ...responseHeaders
           }
         }
@@ -102,8 +187,7 @@ export function patchFetch() {
 }
 
 /**
- * Core: Intercept XMLHttpRequest (new addition)
- * Use inheritance to extend the native XHR class
+ * Core: Intercept XMLHttpRequest
  */
 
 function patchXHR() {
@@ -113,6 +197,8 @@ function patchXHR() {
     private _url: string = '';
     private _method: string = 'GET';
     private _startTime: number = 0;
+    private _requestHeaders: Headers = new Headers();
+    private _requestBody: any = undefined; // raw body sent
 
     open(method: string, url: string | URL, ...args: any[]) {
       this._url = url.toString();
@@ -121,54 +207,109 @@ function patchXHR() {
       // @ts-ignore
       super.open(method, url, ...args);
     }
+    
+    setRequestHeader(name: string, value: string) {
+      this._requestHeaders.set(name, value);
+      super.setRequestHeader(name, value);
+    }
 
     send(body?: any) {
-      // 1. 白名单：如果是内部请求，直接放行
+      this._requestBody = body; // Store raw body sent
+
       if (this._url.includes('/__pocket_mock/')) {
         super.send(body);
         return;
       }
 
-      // 2. 等待初始化完成并检查是否需要拦截
       (async () => {
         try {
           await appReady;
 
-          const matchedRule = activeRules.find(r =>
-            r.enabled && r.method === this._method && matchRoute(r.url, this._url).match
-          );
+          const matchResult = activeRules.map(r => ({
+            rule: r,
+            match: matchRoute(r.url, this._url)
+          })).find(item => item.rule.enabled && item.rule.method === this._method && item.match.match);
 
-          if (matchedRule) {
-            console.log(`[PocketMock] XHR拦截: ${this._method} ${this._url}`);
+          if (matchResult) {
+            const { rule, match } = matchResult;
+            console.log(`[PocketMock] XHR intercepted: ${this._method} ${this._url}`);
 
-            if (matchedRule.delay > 0) await sleep(matchedRule.delay);
+            if (rule.delay > 0) await sleep(rule.delay);
 
-            // === 响应数据结构解析 ===
-            // 检查是否是包装的响应格式 {status, headers, body}
-            let actualResponseData;
-            let actualHeaders = matchedRule.headers || {};
-            let actualStatus = matchedRule.status;
-
-            if (matchedRule.response && typeof matchedRule.response === 'object') {
-              const resp = matchedRule.response;
-              if (resp.body && resp.status !== undefined) {
-                // 包装格式：{status, headers, body}
-                actualResponseData = resp.body;
-                actualHeaders = { ...actualHeaders, ...resp.headers };
-                actualStatus = resp.status;
-              } else {
-                // 直接格式：就是响应内容
-                actualResponseData = resp;
-              }
-            } else {
-              // 字符串或其他类型
-              actualResponseData = matchedRule.response;
+            let resolvedResponse: any = rule.response;
+            let bodyData: any = this._requestBody;
+            if (bodyData instanceof FormData) { // Convert FormData to object for easier access
+                const formDataObj: Record<string, string> = {};
+                for (const pair of bodyData.entries()) {
+                    formDataObj[pair[0]] = pair[1].toString();
+                }
+                bodyData = formDataObj;
+            } else if (bodyData instanceof URLSearchParams) { // Convert URLSearchParams to object
+                const urlSearchParamsObj: Record<string, string> = {};
+                for (const pair of bodyData.entries()) {
+                    urlSearchParamsObj[pair[0]] = pair[1].toString();
+                }
+                bodyData = urlSearchParamsObj;
             }
 
-            const responseData = typeof actualResponseData === 'string' ? actualResponseData : JSON.stringify(actualResponseData);
 
-            // 设置 XHR 响应属性
-            Object.defineProperty(this, 'status', { value: actualStatus, writable: true });
+            if (typeof rule.response === 'string') {
+                const trimmed = rule.response.trim();
+                if (trimmed.startsWith('(') || trimmed.startsWith('function') || trimmed.includes('=>') || trimmed.startsWith('{') || trimmed.startsWith('[')) {
+                  try {
+                    const evaluated = new Function('return ' + rule.response)();
+                    resolvedResponse = evaluated;
+                  } catch (e) {
+                    // Keep as string
+                  }
+                }
+            }
+
+            if (typeof resolvedResponse === 'function') {
+              const mockRequest = await createMockRequest(this._url, this._method, this._requestHeaders, bodyData, match.params);
+              console.log('[PocketMock] Executing dynamic response (XHR) with req:', mockRequest); // Debug log
+              try {
+                  resolvedResponse = await Promise.resolve(resolvedResponse(mockRequest));
+                  console.log('[PocketMock] Dynamic response result:', resolvedResponse);
+              } catch (e) {
+                  console.error('[PocketMock] Error executing response function:', e);
+                  resolvedResponse = { status: 500, body: { error: 'Mock function execution failed' } };
+              }
+            }
+
+            const duration = Math.round(performance.now() - this._startTime);
+
+            // Handle full Response object from function - XHR specific handling
+            if (resolvedResponse instanceof Response) {
+              // For XHR, we need to extract properties from Response and set them on the XHR instance
+              const responseText = await resolvedResponse.text();
+              const responseStatus = resolvedResponse.status;
+              const responseHeaders = Object.fromEntries(resolvedResponse.headers.entries());
+
+              // Reconstruct as a compatible object
+              resolvedResponse = {
+                body: responseText,
+                status: responseStatus,
+                headers: responseHeaders,
+              };
+            }
+
+            let actualResponseData = resolvedResponse;
+            let actualHeaders = rule.headers || {};
+            let actualStatus = rule.status;
+
+            // Handle { body, status, headers } object from function (or standard rule.response)
+            if (resolvedResponse && typeof resolvedResponse === 'object' && Object.prototype.hasOwnProperty.call(resolvedResponse, 'body')) {
+              actualResponseData = resolvedResponse.body;
+              actualStatus = resolvedResponse.status || rule.status;
+              actualHeaders = { ...actualHeaders, ...resolvedResponse.headers };
+            }
+
+                        const responseData = (typeof actualResponseData === 'string' ? actualResponseData : JSON.stringify(actualResponseData)) || '{}';
+
+                        console.log('[PocketMock] XHR responseData being set:', responseData); // Debug log
+
+                        Object.defineProperty(this, 'status', { value: actualStatus, writable: true });
             Object.defineProperty(this, 'statusText', { value: actualStatus === 200 ? 'OK' : 'Mocked', writable: true });
             Object.defineProperty(this, 'readyState', { value: 4, writable: true });
             Object.defineProperty(this, 'response', { value: responseData, writable: true });
@@ -176,20 +317,17 @@ function patchXHR() {
             Object.defineProperty(this, 'responseURL', { value: this._url, writable: true });
 
             const finalHeaders = Object.entries({
-              'content-type': 'application/json',
+              'content-type': 'application/json', // Default to JSON content type
               ...actualHeaders
             }).map(([k, v]) => `${k}: ${v}`).join('\r\n');
 
             this.getAllResponseHeaders = () => finalHeaders;
             this.getResponseHeader = (name: string) => actualHeaders[name.toLowerCase()] || null;
 
-            // 记录日志
-            const duration = Math.round(performance.now() - this._startTime);
             requestLogs.add({
               method: this._method, url: this._url, status: actualStatus, timestamp: Date.now(), duration, isMock: true
             });
 
-            // 触发完整的事件序列
             setTimeout(() => {
               this.dispatchEvent(new ProgressEvent('loadstart'));
               this.dispatchEvent(new ProgressEvent('progress', {
@@ -217,7 +355,6 @@ function patchXHR() {
 
         } catch (error) {
           console.error('[PocketMock] XHR Error:', error);
-          // 如果出错，尝试透传，避免页面死锁
           super.send(body);
         }
       })();

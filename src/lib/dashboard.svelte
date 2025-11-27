@@ -46,8 +46,15 @@
   function startEdit(rule: any) {
     editingId = rule.id;
     activeTab = 'body';
-    // Format JSON with 2-space indent
-    editContent = JSON.stringify(rule.response, null, 2);
+    
+    // Handle content display: if response is a string (function/code), show as is.
+    // If object, format as JSON.
+    if (typeof rule.response === 'string') {
+      editContent = rule.response;
+    } else {
+      editContent = JSON.stringify(rule.response, null, 2);
+    }
+    
     editHeadersContent = JSON.stringify(rule.headers || {}, null, 2);
     editUrl = rule.url;
     editMethod = rule.method;

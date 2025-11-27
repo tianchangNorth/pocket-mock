@@ -29,7 +29,7 @@ testBtn.style.zIndex = "999999";
 document.body.appendChild(testBtn);
 
 const axiosTestBtn = document.createElement('button');
-axiosTestBtn.textContent = "测试：axios 请求 /api/demo";
+axiosTestBtn.textContent = "测试：axios 请求 /api/demo?id=1";
 axiosTestBtn.style.position = "fixed";
 axiosTestBtn.style.bottom = "70px";
 axiosTestBtn.style.left = "20px";
@@ -59,9 +59,9 @@ document.body.appendChild(axiosTestBtn2);
 // 测试按钮功能
 async function testFetch() {
   console.log("=== fetch 测试 ===");
-  console.log("发起 fetch 请求到 https://jsonplaceholder.typicode.com/todos/1");
+  console.log("发起 fetch 请求到 /todos/1");
   try {
-    const res = await fetch('https://jsonplaceholder.typicode.com/todos/1');
+    const res = await fetch('/todos/1');
     const data = await res.json();
     console.log("fetch 响应数据:", data);
 
@@ -76,7 +76,7 @@ async function testAxiosDemo() {
   console.log("=== axios 测试1 - /api/demo (应该被mock) ===");
 
   try {
-    const res = await axios.get('/api/demo');
+    const res = await axios.get('/api/demo?id=1');
     console.log("✅ axios /api/demo 响应数据:", res.data);
     console.log("✅ axios 响应状态:", res.status);
 
@@ -113,7 +113,7 @@ axiosTestBtn2.onclick = testAxiosTodos;
 // 自动测试请求
 setTimeout(async () => {
   try {
-    const res = await axios.get('/api/demo');
+    const res = await axios.get('/api/demo?id=1');
     console.log("🎉 自动测试成功! 响应数据:", res.data);
   } catch (e: any) {
     console.error("❌ 自动测试失败:", e.message);

@@ -2,7 +2,7 @@
   import { onDestroy, createEventDispatcher, tick } from 'svelte';
   import { EditorView, basicSetup } from 'codemirror';
   import { EditorState } from '@codemirror/state';
-  import { json } from '@codemirror/lang-json';
+  import { javascript } from '@codemirror/lang-javascript';
   import { oneDark } from '@codemirror/theme-one-dark';
 
   export let value: string = '';
@@ -13,7 +13,7 @@
 
   const dispatch = createEventDispatcher();
 
-  // Use reactive declaration instead of onMount for Shadow DOM compatibility
+  // Reactive initialization: wait for container to exist and be visible
   $: if (editorContainer && !initialized && !editorView) {
     tick().then(() => {
       initializeEditor();
@@ -23,6 +23,11 @@
   function initializeEditor() {
     if (!editorContainer || initialized || editorView) return;
 
+    // Check if container has size - critical for CM in Shadow DOM
+    if (editorContainer.offsetWidth === 0 && editorContainer.offsetHeight === 0) {
+       return; // Wait for next tick/update
+    }
+
     const root = editorContainer.getRootNode();
 
     try {
@@ -30,7 +35,7 @@
         doc: value,
         extensions: [
           basicSetup,
-          json(),
+          javascript(),
           oneDark,
           EditorView.lineWrapping,
           EditorView.updateListener.of((update:any) => {
@@ -48,6 +53,7 @@
       });
 
       initialized = true;
+
     } catch (e) {
       console.error('[JsonEditor] Failed to initialize:', e);
     }
@@ -70,12 +76,10 @@
       }
     });
   }
-
-  // Re-attempt initialization if container becomes visible
-  $: if (!initialized && !editorView && editorContainer && editorContainer.offsetWidth > 0) {
-    tick().then(() => {
-      initializeEditor();
-    });
+  
+  // Watch for visibility changes (e.g. tab switch)
+  $: if (!initialized && editorContainer && editorContainer.offsetHeight > 0) {
+     initializeEditor();
   }
 </script>
 

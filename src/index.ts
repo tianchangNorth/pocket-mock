@@ -4,12 +4,27 @@ import { initInterceptor } from './core/interceptor';
 import { initStore } from './core/store';
 // Import global styles as string (Vite will convert CSS to string and assign it to this variable)
 import globalStyles from './app.css?inline';
+// Import types
+import type { MockRule } from './core/types';
 
 let app: Dashboard | null = null;
 let shadowHost: HTMLElement | null = null;
 
 export interface PocketMockOptions {
   enable?: boolean;
+}
+
+// Export types for TypeScript users
+export type { MockRule, MockRequest, DynamicResponseFunction } from './core/types';
+
+/**
+ * A utility function to define mock rules with type safety.
+ * This function does nothing at runtime, it's purely for TypeScript type inference.
+ * @param config An array of MockRule objects.
+ * @returns The same array of MockRule objects.
+ */
+export function defineConfig(config: MockRule[]): MockRule[] {
+  return config;
 }
 
 export function start(options: PocketMockOptions = {}) {
@@ -53,6 +68,3 @@ function mountUI() {
     target: shadow,
   });
 }
-
-// Export type definitions for TypeScript users
-export type { MockRule } from './core/interceptor';

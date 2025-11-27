@@ -1,6 +1,7 @@
 // src/core/store.ts
 import { writable } from 'svelte/store';
-import { type MockRule, updateRules } from './interceptor';
+import { updateRules } from './interceptor';
+import type { MockRule } from './types';
 
 const STORAGE_KEY = 'pocket_mock_rules_v1';
 let isServerMode = false;
@@ -113,15 +114,27 @@ export const toggleRule = (id: string) => {
   rules.update(items => items.map(r => r.id === id ? { ...r, enabled: !r.enabled } : r));
 };
 
-export const updateRuleResponse = (id: string, newResponseJson: string) => {
+export const updateRuleResponse = (id: string, newResponseContent: string) => {
+  let parsedResponse: any;
+  
   try {
-    const parsed = JSON.parse(newResponseJson);
-    rules.update(items => items.map(r => r.id === id ? { ...r, response: parsed } : r));
-    return true;
+    // 1. Try strict JSON parsing
+    parsedResponse = JSON.parse(newResponseContent);
   } catch (e) {
-    console.error('[PocketMock] JSON format error:', e);
-    return false;
+    // 2. If JSON fails, it might be:
+    //    a) A JS object literal: { a: 1 } (valid JS, invalid JSON)
+    //    b) A function: (req) => { ... }
+    //    c) A plain string: Hello World
+    
+    // We treat it as a string. The interceptor will decide how to execute it.
+    // However, to support { a: 1 } auto-conversion to JSON, we could try to evaluate it safely?
+    // For now, to support functions, we MUST save as string if it looks like a function.
+    
+    parsedResponse = newResponseContent;
   }
+
+  rules.update(items => items.map(r => r.id === id ? { ...r, response: parsedResponse } : r));
+  return true;
 };
 
 export const updateRuleDelay = (id: string, delay: number) => {
