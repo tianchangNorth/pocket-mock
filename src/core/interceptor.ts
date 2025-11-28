@@ -45,15 +45,19 @@ async function createMockRequest(
     try {
       jsonBody = JSON.parse(bodyData);
     } catch (e) {
-      console.warn('[PocketMock] Could not parse JSON body for MockRequest:', e);
+      // console.warn('[PocketMock] Could not parse JSON body for MockRequest:', e); // Remove log
     }
   }
+
+  // DX Enhancement: If body is parsed JSON, prioritize it for req.body
+  // This allows users to use req.body.key directly
+  const finalBody = jsonBody || bodyData;
 
   return {
     url: url,
     method: method,
     headers: requestHeaders,
-    body: bodyData,
+    body: finalBody,
     json: jsonBody,
     params: params,
     query: query,
@@ -99,7 +103,7 @@ export function patchFetch() {
 
     if (matchResult) {
       const { rule, match } = matchResult;
-      console.log(`[PocketMock] Fetch intercepted: ${method} ${url}`);
+      // console.log(`[PocketMock] Fetch intercepted: ${method} ${url}`); // Remove log
 
       if (rule.delay > 0) {
         await sleep(rule.delay);
@@ -128,7 +132,7 @@ export function patchFetch() {
         try {
           resolvedResponse = await Promise.resolve(resolvedResponse(mockRequest));
         } catch (e) {
-          console.error('[PocketMock] Error executing response function:', e);
+          // console.error('[PocketMock] Error executing response function:', e); // Remove log
           resolvedResponse = { status: 500, body: { error: 'Mock function execution failed' } };
         }
       }
@@ -232,7 +236,7 @@ function patchXHR() {
 
           if (matchResult) {
             const { rule, match } = matchResult;
-            console.log(`[PocketMock] XHR intercepted: ${this._method} ${this._url}`);
+            // console.log(`[PocketMock] XHR intercepted: ${this._method} ${this._url}`); // Remove log
 
             if (rule.delay > 0) await sleep(rule.delay);
 
@@ -270,9 +274,9 @@ function patchXHR() {
               console.log('[PocketMock] Executing dynamic response (XHR) with req:', mockRequest); // Debug log
               try {
                   resolvedResponse = await Promise.resolve(resolvedResponse(mockRequest));
-                  console.log('[PocketMock] Dynamic response result:', resolvedResponse);
+                  // console.log('[PocketMock] Dynamic response result:', resolvedResponse); // Remove log
               } catch (e) {
-                  console.error('[PocketMock] Error executing response function:', e);
+                  // console.error('[PocketMock] Error executing response function:', e); // Remove log
                   resolvedResponse = { status: 500, body: { error: 'Mock function execution failed' } };
               }
             }
@@ -354,7 +358,7 @@ function patchXHR() {
           super.send(body);
 
         } catch (error) {
-          console.error('[PocketMock] XHR Error:', error);
+          // console.error('[PocketMock] XHR Error:', error); // Remove log
           super.send(body);
         }
       })();
@@ -366,7 +370,7 @@ function patchXHR() {
 }
 
 export function initInterceptor() {
-  console.log('%c PocketMock started (Fetch + XHR) ', 'background: #222; color: #bada55');
+  // console.log('%c PocketMock started (Fetch + XHR) ', 'background: #222; color: #bada55'); // Remove log
   patchFetch();
   patchXHR();
 }

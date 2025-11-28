@@ -55,7 +55,7 @@
       initialized = true;
 
     } catch (e) {
-      console.error('[JsonEditor] Failed to initialize:', e);
+      // console.error('[JsonEditor] Failed to initialize:', e); // Remove log
     }
   }
 

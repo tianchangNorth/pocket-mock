@@ -38,53 +38,52 @@ export const initStore = async () => {
         const data = await res.json();
 
         if (Array.isArray(data)) {
-          rules.set(data);
-          isServerMode = true;
-          console.log(`[PocketMock] Server Mode: Loaded ${data.length} rules`);
-          return; // ✅ 即使这里 return，下方的 finally 依然会执行！
-        } else {
-          isServerMode = false;
-          console.log('[PocketMock] Server response invalid, trying LocalStorage...');
-        }
-      }
-    } catch (e) {
-      // Server 连接失败，静默失败，继续往下走
-      isServerMode = false;
-    }
-
-    // --- 阶段二：降级读取 LocalStorage ---
-    try {
-      const json = localStorage.getItem(STORAGE_KEY);
-      if (json) {
-        const data = JSON.parse(json);
-        rules.set(data);
-        console.log(`[PocketMock] LocalStorage Mode: Loaded ${data.length} rules`);
-        return; // ✅ 即使这里 return，下方的 finally 依然会执行！
-      }
-    } catch (e) {
-      console.error('[PocketMock] LocalStorage read failed:', e);
-    }
-
-    // --- 阶段三：完全没数据，使用默认 Demo ---
-    // const defaultRules = [{
-    //   id: 'demo-1',
-    //   url: '/api/demo',
-    //   method: 'GET',
-    //   response: { msg: 'Hello PocketMock' },
-    //   enabled: true,
-    //   delay: 500,
-    //   status: 200,
-    //   headers: {}
-    // }];
-
-    // rules.set(defaultRules);
-    console.log('[PocketMock] No rules found, starting empty.');
-
-  } finally {
-    // 修改 3: 这里的代码是“救命稻草”，无论上面发生了什么（报错、return、成功），这里都会执行
-    if (resolveReady) resolveReady();
-  }
-};
+                    rules.set(data);
+                    isServerMode = true;
+                    // console.log(`[PocketMock] Server Mode: Loaded ${data.length} rules`); // Remove log
+                    return; // ✅ 即使这里 return，下方的 finally 依然会执行！
+                  } else {
+                    isServerMode = false;
+                    // console.log('[PocketMock] Server response invalid, trying LocalStorage...'); // Remove log
+                  }
+                }
+              } catch (e) {
+                // Server 连接失败，静默失败，继续往下走
+                isServerMode = false;
+              }
+          
+              // --- 阶段二：降级读取 LocalStorage ---
+              try {
+                const json = localStorage.getItem(STORAGE_KEY);
+                if (json) {
+                  const data = JSON.parse(json);
+                  rules.set(data);
+                  // console.log(`[PocketMock] LocalStorage Mode: Loaded ${data.length} rules`); // Remove log
+                  return; // ✅ 即使这里 return，下方的 finally 依然会执行！
+                }
+              } catch (e) {
+                // console.error('[PocketMock] LocalStorage read failed:', e); // Remove log
+              }
+          
+              // --- 阶段三：完全没数据，使用默认 Demo ---
+              // const defaultRules = [{
+              //   id: 'demo-1',
+              //   url: '/api/demo',
+              //   method: 'GET',
+              //   response: { msg: 'Hello PocketMock' },
+              //   enabled: true,
+              //   delay: 500,
+              //   status: 200,
+              //   headers: {}
+              // }];
+          
+              // rules.set(defaultRules);
+              // console.log('[PocketMock] No rules found, starting empty.'); // Remove log
+            } finally {
+              // 修改 3: 这里的代码是“救命稻草”，无论上面发生了什么（报错、return、成功），这里都会执行
+              if (resolveReady) resolveReady();
+            }
+          };
 
 // === Subscription and save logic (保持不变) ===
 let saveTimer: any;
@@ -98,12 +97,12 @@ rules.subscribe((value) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(value, null, 2)
-      }).catch(e => console.error('[PocketMock] File save failed:', e));
+      })// .catch(e => console.error('[PocketMock] File save failed:', e)); // Remove log
     } else {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
       } catch (e) {
-        console.error('[PocketMock] LocalStorage save failed:', e);
+        // console.error('[PocketMock] LocalStorage save failed:', e); // Remove log
       }
     }
   }, 500);

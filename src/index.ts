@@ -38,7 +38,7 @@ export function start(options: PocketMockOptions = {}) {
   // 3. Mount UI (Shadow DOM)
   mountUI();
 
-  console.log('%c PocketMock Started 🚀', 'color: #00d1b2; font-weight: bold;');
+  // console.log('%c PocketMock Started 🚀', 'color: #00d1b2; font-weight: bold;'); // Remove log
 }
 
 function mountUI() {
