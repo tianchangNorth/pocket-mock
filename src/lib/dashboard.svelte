@@ -22,7 +22,7 @@
   let editStatus: string = "200";
   let editDelay: string = "0";
   
-  let activeTab: 'body' | 'headers' | 'config' = 'body';
+  let activeTab: 'body' | 'headers' = 'body';
   
   // Main tab status
   let activeMainTab: 'rules' | 'network' = 'rules';
@@ -125,6 +125,24 @@
 
   function cancelEdit() {
     editingId = null;
+  }
+  
+  function formatJSON() {
+    try {
+      const currentContent = activeTab === 'body' ? editContent : editHeadersContent;
+      // Check if it's valid JSON first
+      const parsed = JSON.parse(currentContent);
+      const formatted = JSON.stringify(parsed, null, 2);
+      
+      if (activeTab === 'body') {
+        editContent = formatted;
+      } else {
+        editHeadersContent = formatted;
+      }
+      showToast("JSON formatted", "success");
+    } catch (e) {
+      showToast("Invalid JSON, cannot format", "error");
+    }
   }
 
   // Draggable logic
@@ -244,6 +262,7 @@
 <div 
   class="container" 
   class:minimized={minimized} 
+  class:editing-mode={!!editingId && !minimized}
   bind:this={containerRef}
 >
   <Toast />
@@ -278,14 +297,88 @@
     </button>
   </div>
 
-  {#if !minimized}
-    <div class="main-tabs">
-      <button class="main-tab-btn" class:active={activeMainTab === 'rules'} on:click={() => activeMainTab = 'rules'}>Rules</button>
-      <button class="main-tab-btn" class:active={activeMainTab === 'network'} on:click={() => activeMainTab = 'network'}>Network</button>
-    </div>
-  {/if}
+    {#if editingId}
+      <div class="editor-panel">
+        <!-- Top Config Bar -->
+        <div class="rule-config-bar">
+           <div class="rule-config-row primary">
+             <div style="width: 110px;">
+               <Select bind:value={editMethod} options={METHODS} />
+             </div>
+             <div style="flex: 1;">
+               <Input placeholder="/api/path" bind:value={editUrl} />
+             </div>
+           </div>
+           <div class="rule-config-row secondary">
+             <div class="mini-field">
+                <label for="status">Status</label>
+                <Input id="status" type="number" bind:value={editStatus} />
+             </div>
+             <div class="mini-field">
+                <label for="delay">Delay (ms)</label>
+                <Input id="delay" type="number" bind:value={editDelay} />
+             </div>
+           </div>
+        </div>
 
-  {#if !minimized}
+        <div class="editor-header">
+          <div class="editor-tabs" role="tablist">
+            <button
+              role="tab"
+              class:active={activeTab === 'body'}
+              on:click={() => activeTab = 'body'}
+            >Body</button>
+            <button
+              role="tab"
+              class:active={activeTab === 'headers'}
+              on:click={() => activeTab = 'headers'}
+            >Headers</button>
+          </div>
+          <div class="editor-actions">
+             <button class="action-btn" title="Format JSON" on:click={formatJSON}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 10H3M21 6H3M21 14H3M21 18H3"/>
+                </svg>
+             </button>
+             <div class="divider"></div>
+             <Button size="sm" variant="danger" icon on:click={() => {
+                if (editingId) deleteRule(editingId);
+                editingId = null;
+             }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
+             </Button>
+          </div>
+        </div>
+
+        <div class="editor-content">
+          {#if activeTab === 'body'}
+            <JsonEditor
+              value={editContent}
+              on:change={(e) => (editContent = e.detail)}
+              height="100%"
+            />
+          {:else}
+            <JsonEditor
+              value={editHeadersContent}
+              on:change={(e) => (editHeadersContent = e.detail)}
+              height="100%"
+            />
+          {/if}
+        </div>
+
+        <div class="editor-footer">
+          <Button size="sm" on:click={cancelEdit}>Cancel</Button>
+          <Button size="sm" variant="primary" on:click={saveEdit}>Save Changes</Button>
+        </div>
+      </div>
+    {:else}
+      <div class="main-tabs">
+        <button class="main-tab-btn" class:active={activeMainTab === 'rules'} on:click={() => activeMainTab = 'rules'}>Rules</button>
+        <button class="main-tab-btn" class:active={activeMainTab === 'network'} on:click={() => activeMainTab = 'network'}>Network</button>
+      </div>
+
     <div class="content">
       {#if activeMainTab === 'rules'}
         {#if showAddPanel}
@@ -313,116 +406,8 @@
           </div>
         {:else}
           {#each $rules as rule (rule.id)}
-            <div class="card" class:editing={editingId === rule.id}>
-              {#if editingId === rule.id}
-                <!-- Edit Mode -->
-                <div class="editor-container">
-                  <div class="editor-header">
-                    <div class="editor-tabs" role="tablist">
-                      <button
-                        role="tab"
-                        id="config-tab"
-                        class:active={activeTab === 'config'}
-                        aria-selected={activeTab === 'config'}
-                        on:click={() => activeTab = 'config'}
-                        on:keydown={(e) => {
-                          if (e.key === 'ArrowRight') {
-                            e.preventDefault();
-                            activeTab = activeTab === 'config' ? 'body' : activeTab === 'body' ? 'headers' : 'config';
-                          } else if (e.key === 'ArrowLeft') {
-                            e.preventDefault();
-                            activeTab = activeTab === 'config' ? 'headers' : activeTab === 'body' ? 'config' : 'body';
-                          }
-                        }}
-                      >Config</button>
-                      <button
-                        role="tab"
-                        id="body-tab"
-                        class:active={activeTab === 'body'}
-                        aria-selected={activeTab === 'body'}
-                        on:click={() => activeTab = 'body'}
-                        on:keydown={(e) => {
-                          if (e.key === 'ArrowRight') {
-                            e.preventDefault();
-                            activeTab = activeTab === 'config' ? 'body' : activeTab === 'body' ? 'headers' : 'config';
-                          } else if (e.key === 'ArrowLeft') {
-                            e.preventDefault();
-                            activeTab = activeTab === 'config' ? 'headers' : activeTab === 'body' ? 'config' : 'body';
-                          }
-                        }}
-                      >Body</button>
-                      <button
-                        role="tab"
-                        id="headers-tab"
-                        class:active={activeTab === 'headers'}
-                        aria-selected={activeTab === 'headers'}
-                        on:click={() => activeTab = 'headers'}
-                        on:keydown={(e) => {
-                          if (e.key === 'ArrowRight') {
-                            e.preventDefault();
-                            activeTab = activeTab === 'config' ? 'body' : activeTab === 'body' ? 'headers' : 'config';
-                          } else if (e.key === 'ArrowLeft') {
-                            e.preventDefault();
-                            activeTab = activeTab === 'config' ? 'headers' : activeTab === 'body' ? 'config' : 'body';
-                          }
-                        }}
-                      >Headers</button>
-                    </div>
-                    <div class="editor-actions">
-                       <Button size="sm" variant="danger" icon on:click={() => {
-                          deleteRule(rule.id);
-                          editingId = null;
-                       }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                        </svg>
-                       </Button>
-                    </div>
-                  </div>
+            <div class="card">
 
-                  <div class="editor-content">
-                    {#if activeTab === 'config'}
-                      <div class="config-grid">
-                         <!-- svelte-ignore a11y-label-has-associated-control -->
-                         <div class="field-group">
-                            <label>Method</label>
-                            <Select bind:value={editMethod} options={METHODS} />
-                         </div>
-                         <!-- svelte-ignore a11y-label-has-associated-control -->
-                         <div class="field-group url-group">
-                            <label>URL Pattern</label>
-                            <Input bind:value={editUrl} />
-                         </div>
-                         <!-- svelte-ignore a11y-label-has-associated-control -->
-                         <div class="field-group">
-                            <label>Status</label>
-                            <Input type="number" bind:value={editStatus} />
-                         </div>
-                         <!-- svelte-ignore a11y-label-has-associated-control -->
-                         <div class="field-group">
-                            <label>Delay (ms)</label>
-                            <Input type="number" bind:value={editDelay} />
-                         </div>
-                      </div>
-                    {:else if activeTab === 'body'}
-                      <JsonEditor
-                        value={editContent}
-                        on:change={(e) => (editContent = e.detail)}
-                      />
-                    {:else}
-                      <JsonEditor
-                        value={editHeadersContent}
-                        on:change={(e) => (editHeadersContent = e.detail)}
-                      />
-                    {/if}
-                  </div>
-
-                  <div class="editor-footer">
-                    <Button size="sm" on:click={cancelEdit}>Cancel</Button>
-                    <Button size="sm" variant="primary" on:click={saveEdit}>Save Changes</Button>
-                  </div>
-                </div>
-              {:else}
                 <!-- Preview Mode -->
                 <!-- svelte-ignore a11y-click-events-have-key-events -->
                 <!-- svelte-ignore a11y-no-static-element-interactions -->
@@ -481,7 +466,6 @@
                    <span class="meta-item">Status: <b>{rule.status}</b></span>
                    <span class="meta-item">Delay: <b>{rule.delay}ms</b></span>
                 </div>
-              {/if}
             </div>
           {/each}
         {/if}
@@ -823,7 +807,7 @@
     transform: translateY(-1px);
   }
 
-  .card.editing {
+  :global(.card.editing) {
     border-color: var(--pm-primary);
     transform: none;
   }
@@ -868,7 +852,7 @@
   }
 
   /* Editor Mode */
-  .editor-container {
+  :global(.editor-container ){
     background: var(--pm-bg-tertiary);
   }
 
@@ -915,18 +899,18 @@
     flex-direction: column;
   }
 
-  .config-grid {
+  :global(.config-grid ){
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
     flex: 1;
   }
 
-  .url-group {
+  :global(.url-group) {
     grid-column: span 2;
   }
 
-  .field-group label {
+  :global(.field-group) label {
     display: block;
     font-size: 11px;
     color: var(--pm-text-secondary);
@@ -1115,5 +1099,116 @@
     white-space: pre-wrap;
     max-height: 200px;
     margin: 0;
+  }
+
+  /* Editing Mode Styles */
+  .container.editing-mode {
+    width: 800px;
+    height: 80vh;
+    max-height: 90vh;
+  }
+
+  @media (max-width: 820px) {
+    .container.editing-mode {
+      width: 95vw;
+      height: 90vh;
+      right: 2.5vw !important;
+      bottom: 5vh !important;
+    }
+  }
+
+  .editor-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: var(--pm-bg-secondary);
+    overflow: hidden;
+  }
+
+  .editor-panel .editor-header {
+    background: var(--pm-bg-tertiary);
+    border-bottom: 1px solid var(--pm-border);
+    padding: 8px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .editor-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .divider {
+    width: 1px;
+    height: 16px;
+    background: var(--pm-border);
+    margin: 0 4px;
+  }
+
+  .rule-config-bar {
+    padding: 16px;
+    background: var(--pm-bg-tertiary);
+    border-bottom: 1px solid var(--pm-border);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .rule-config-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .rule-config-row.primary {
+    width: 100%;
+  }
+
+  .rule-config-row.secondary {
+    width: 100%;
+  }
+
+  .mini-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+  }
+
+  .mini-field label {
+    font-size: 11px;
+    color: var(--pm-text-secondary);
+    white-space: nowrap;
+    min-width: 40px;
+  }
+
+  .editor-panel .editor-content {
+    flex: 1;
+    min-height: 0;
+    overflow-y: hidden; /* Let JsonEditor scroll, or config scroll */
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+  }
+  
+ :global( .editor-panel .config-wrapper) {
+     padding: 16px;
+     overflow-y: auto;
+     height: 100%;
+  }
+
+  .editor-panel .editor-footer {
+    background: var(--pm-bg-tertiary);
+    border-top: 1px solid var(--pm-border);
+    padding: 12px 16px;
+  }
+
+  /* Override JsonEditor borders when in full panel */
+  .editor-panel :global(.json-editor-container) {
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
   }
 </style>

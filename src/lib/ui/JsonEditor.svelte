@@ -6,6 +6,7 @@
   import { oneDark } from '@codemirror/theme-one-dark';
 
   export let value: string = '';
+  export let height: string = '200px';
 
   let editorContainer: HTMLDivElement;
   let editorView: EditorView | null = null;
@@ -119,12 +120,11 @@
   }
 </script>
 
-<div class="json-editor-container" bind:this={editorContainer}></div>
+<div class="json-editor-container" style="height: {height};" bind:this={editorContainer}></div>
 
 <style>
   .json-editor-container {
     width: 100%;
-    height: 200px; /* Fixed height for better visual consistency */
     min-height: 200px;
     border: 1px solid var(--pm-border);
     border-radius: 4px;
