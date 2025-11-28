@@ -29,6 +29,8 @@
     }
 
     const root = editorContainer.getRootNode();
+    // Check for system dark mode preference
+    const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 
     try {
       const startState = EditorState.create({
@@ -36,8 +38,42 @@
         extensions: [
           basicSetup,
           javascript(),
-          oneDark,
+          isDark ? oneDark : [], // Conditionally apply Dark Theme
           EditorView.lineWrapping,
+          // Ensure CodeMirror styles adapt to theme or environment
+          EditorView.theme({
+            "&": { height: "100%" }, // Ensure editor fills container
+            ".cm-content": {
+              padding: "10px 0",
+              caretColor: "var(--pm-text-primary)"
+            },
+            ".cm-line": {
+              padding: "0 10px"
+            },
+            // Use CSS variables for gutters to match theme if oneDark is NOT active
+            ".cm-gutters": {
+              backgroundColor: "var(--pm-input-bg)",
+              borderRight: "1px solid var(--pm-border)",
+              color: "var(--pm-text-secondary)"
+            },
+            ".cm-activeLine": {
+              backgroundColor: "rgba(128, 128, 128, 0.1)"
+            },
+            ".cm-activeLineGutter": {
+              backgroundColor: "rgba(128, 128, 128, 0.1)"
+            },
+            // Enhanced selection styling
+            "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection": {
+              backgroundColor: "rgba(59, 130, 246, 0.3) !important"
+            },
+            "&.cm-focused .cm-selectionLayer .cm-selectionBackground": {
+              backgroundColor: "rgba(59, 130, 246, 0.3) !important"
+            },
+            // WebKit selection for better visibility
+            ".cm-content ::-moz-selection": {
+              backgroundColor: "rgba(59, 130, 246, 0.3) !important"
+            }
+          }),
           EditorView.updateListener.of((update:any) => {
             if (update.docChanged) {
               dispatch('change', update.state.doc.toString());
@@ -100,9 +136,9 @@
 
   /* Focus state for container - more stable approach */
   .json-editor-container:focus-within {
-    border-color: #666;
+    border-color: var(--pm-primary, #666);
     outline: none;
-    box-shadow: 0 0 0 1px #666;
+    box-shadow: 0 0 0 1px var(--pm-primary, #666);
   }
 
   /* Ensure CodeMirror fills the container completely */
@@ -114,6 +150,7 @@
     font-family: 'Menlo', 'Monaco', 'Courier New', monospace !important;
     font-size: 13px !important;
     line-height: 1.5 !important;
+    color: var(--pm-text-primary) !important; /* Ensure text color adapts if no theme */
   }
 
   /* Ensure the scroller fills the editor */
@@ -166,6 +203,27 @@
   }
   :global(.cm-scroller::-webkit-scrollbar-corner) {
     background: var(--pm-input-bg) !important;
+  }
+
+  /* Enhanced selection styling with higher specificity */
+  :global(.cm-editor.cm-focused .cm-selectionLayer .cm-selectionBackground),
+  :global(.cm-editor .cm-selectionLayer .cm-selectionBackground) {
+    background-color: rgba(59, 130, 246, 0.3) !important;
+  }
+
+  /* Webkit selection */
+  :global(.cm-editor .cm-content ::selection) {
+    background-color: rgba(59, 130, 246, 0.3) !important;
+  }
+
+  /* Firefox selection */
+  :global(.cm-editor .cm-content ::-moz-selection) {
+    background-color: rgba(59, 130, 246, 0.3) !important;
+  }
+
+  /* Force selection background for all cases */
+  :global(.cm-editor .cm-content .cm-selectionBackground) {
+    background-color: rgba(59, 130, 246, 0.3) !important;
   }
 
   /* Debug info styling */
