@@ -452,8 +452,8 @@ const rule: MockRule = {
 Local development setup:
 
 ```bash
-git clone https://github.com/tianchangNorth/pocket-mock.git
-cd pocket-mock
+git clone https://github.com/tianchangNorth/pocket-mocker.git
+cd pocket-mocker
 npm install
 
 # Start development server
@@ -468,7 +468,7 @@ npm test
 
 ## 📄 License
 
-MIT © [Your Name](https://github.com/tianchangNorth)
+MIT © [tianchang](https://github.com/tianchangNorth)
 
 ## 🙏 Acknowledgments
 

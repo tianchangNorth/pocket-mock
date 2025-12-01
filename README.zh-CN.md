@@ -448,8 +448,8 @@ const rule: MockRule = {
 本地开发环境搭建：
 
 ```bash
-git clone https://github.com/tianchangNorth/pocket-mock.git
-cd pocket-mock
+git clone https://github.com/tianchangNorth/pocket-mocker.git
+cd pocket-mocker
 npm install
 
 # 启动开发服务器
@@ -464,7 +464,7 @@ npm test
 
 ## 📄 开源协议
 
-MIT © [Your Name](https://github.com/tianchangNorth)
+MIT © [tianchang](https://github.com/tianchangNorth)
 
 ## 🙏 致谢
 
