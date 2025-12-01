@@ -8,6 +8,12 @@
 
 [English](README.md) | **中文**
 
+## 🎥 交互式演示
+
+[**在浏览器中体验 PocketMock**](https://tianchangnorth.github.io/pocket-mock/) - 无需安装的交互式 WebP 演示
+
+> 上面的交互式演示展示了 PocketMock 的核心功能，包括智能数据生成、动态响应函数和实时网络监控 - 全部直接在浏览器中运行，无需任何安装。
+
 
 **PocketMock** 是一款零侵入的前端 Mock 工具。与 Postman 或传统的 `mock.js` 不同，它直接**嵌入在你的页面中**，让你在开发时可以实时拦截 `fetch` 和 `XMLHttpRequest`，动态修改响应数据、模拟网络延迟和异常状态码。
 
