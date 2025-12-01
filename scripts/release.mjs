@@ -47,8 +47,16 @@ try {
 
 // 3. 更新版本号（补丁版本）
 console.log('📝 更新版本号...');
-const patchVersion = `${currentVersion}.${Math.floor(Date.now() / 1000)}`;
+const timestamp = Math.floor(Date.now() / 1000);
+const patchVersion = `${currentVersion}.${timestamp}`;
 console.log(`📦 新版本: ${patchVersion}`);
+
+// 更新 package.json 版本
+const packageJsonPath = './package.json';
+const packageData = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
+packageData.version = patchVersion;
+writeFileSync(packageJsonPath, JSON.stringify(packageData, null, 2));
+console.log('✅ 版本已更新到 package.json');
 
 // 4. 提交并推送更改
 console.log('📝 提交更改中...');
