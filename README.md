@@ -10,7 +10,7 @@
 
 **PocketMock** is a zero-intrusion frontend Mock tool. Unlike Postman or traditional `mock.js`, it embeds directly **into your page**, allowing you to intercept `fetch` and `XMLHttpRequest` in real-time during development, dynamically modify response data, simulate network latency, and test error status codes.
 
-![PocketMock Hero Demo](docs/hero-demo.gif)
+
 
 ## ✨ Features
 
@@ -220,7 +220,7 @@ You can use smart generators within function responses for even more power:
 
 ### 📥 Config Import
 
-![PocketMock Import Demo](docs/import-demo.gif)
+
 
 Import mock rules directly from popular API documentation formats. Smart data generation automatically converts request bodies and schema definitions into realistic mock responses.
 
