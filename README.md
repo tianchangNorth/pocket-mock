@@ -9,21 +9,6 @@
 
 **English** | [中文](README.zh-CN.md)
 
-## 🎥 Demo Video
-
-<div align="center">
-
-### 📹 Product Preview
-[![PocketMock Demo](docs/demo-preview.gif)](https://github.com/tianchangNorth/pocket-mock/raw/main/docs/pocket-mocker.mp4)
-
-### 🔗 Download & Watch
-- **▶️ Watch Demo (4.3 MB)**: [Click to download & play](https://github.com/tianchangNorth/pocket-mock/raw/main/docs/pocket-mocker.mp4)
-- **📱 Direct Play**: [Open in new tab](https://github.com/tianchangNorth/pocket-mock/raw/main/docs/pocket-mocker.mp4)
-- **📊 Format**: MP4 (H.264), 4.3 MB, ~5 minutes
-
-</div>
-
-> **💡 Tip**: Click the download link above or open in new tab to watch the full feature demo! The video demonstrates smart data generation, dynamic logic, error simulation, and real-time network monitoring.
 
 **PocketMock** is a zero-intrusion frontend Mock tool. Unlike Postman or traditional `mock.js`, it embeds directly **into your page**, allowing you to intercept `fetch` and `XMLHttpRequest` in real-time during development, dynamically modify response data, simulate network latency, and test error status codes.
 
@@ -90,13 +75,6 @@ Run `npm run dev`. PocketMock automatically detects the plugin environment and s
 
 ## Advanced Features
 
-### 🎥 Video Tutorial
-
-<div align="center">
-  <a href="https://github.com/tianchangNorth/pocket-mock/raw/main/docs/pcoket-mocker.mp4" target="_blank">
-    <img src="https://img.shields.io/badge/🎬-功能演示-blue?style=for-the-badge" alt="功能演示">
-  </a>
-</div>
 
 ### Smart Mock Data Generation
 

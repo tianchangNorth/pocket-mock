@@ -8,21 +8,6 @@
 
 [English](README.md) | **中文**
 
-## 🎥 演示视频
-
-<div align="center">
-
-### 📹 产品预览
-[![PocketMock 演示](docs/demo-preview.gif)](https://github.com/tianchangNorth/pocket-mock/raw/main/docs/pocket-mocker.mp4)
-
-### 🔗 下载与观看
-- **▶️ 观看演示 (4.3 MB)**: [点击下载并播放](https://github.com/tianchangNorth/pocket-mock/raw/main/docs/pocket-mocker.mp4)
-- **📱 直接播放**: [在新标签页打开](https://github.com/tianchangNorth/pocket-mock/raw/main/docs/pocket-mocker.mp4)
-- **📊 格式**: MP4 (H.264), 4.3 MB, 约5分钟
-
-</div>
-
-> **💡 提示**: 点击上面的下载链接或在新标签页打开，即可观看完整功能演示！视频展示了智能数据生成、动态逻辑处理、错误模拟和实时网络监控等核心功能。
 
 **PocketMock** 是一款零侵入的前端 Mock 工具。与 Postman 或传统的 `mock.js` 不同，它直接**嵌入在你的页面中**，让你在开发时可以实时拦截 `fetch` 和 `XMLHttpRequest`，动态修改响应数据、模拟网络延迟和异常状态码。
 
@@ -88,13 +73,6 @@ export default defineConfig({
 
 ## 进阶功能
 
-### 🎥 视频教程
-
-<div align="center">
-  <a href="https://github.com/tianchangNorth/pocket-mock/raw/main/docs/pcoket-mocker.mp4" target="_blank">
-    <img src="https://img.shields.io/badge/🎬-功能演示-blue?style=for-the-badge" alt="功能演示">
-  </a>
-</div>
 
 ### 智能 Mock 数据生成
 
