@@ -2,9 +2,10 @@
   export let variant: "primary" | "secondary" | "danger" | "ghost" = "secondary";
   export let size: "sm" | "md" = "md";
   export let icon: boolean = false;
+  export let title: string | undefined = undefined;
 </script>
 
-<button class="pm-btn {variant} {size}" class:icon on:click>
+<button class="pm-btn {variant} {size}" class:icon {title} on:click>
   <slot />
 </button>
 

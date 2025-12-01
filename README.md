@@ -19,6 +19,7 @@
 - **🧠 Dynamic Response**: Support writing JavaScript functions to handle complex logic and return dynamic data based on request parameters
 - **✨ Smart UI**: Auto-adaptive **Light/Dark Theme**, elegant **Toast** notifications, and responsive layout
 - **🌐 Comprehensive Network Panel**: Logs all network requests (mocked or real), with **search & filter**, **details view** (request/response body), **single-log deletion**, and **"Mock It"** feature to convert real requests into mock rules with one click.
+- **📥 Config Import**: Import mock rules directly from **Postman Collections** and **OpenAPI 3.0** specifications with smart data generation
 - **🛡️ Shadow DOM Isolation**: UI styles are completely isolated, never polluting your application's CSS or being affected by external styles
 - **🐢 Network Simulation**: One-click simulation of API **latency**, **404/500 errors**, perfect for testing skeleton screens and error boundaries
 - **📂 Dual-Mode Persistence**:
@@ -216,6 +217,126 @@ You can use smart generators within function responses for even more power:
   };
 }
 ```
+
+### 📥 Config Import
+
+Import mock rules directly from popular API documentation formats. Smart data generation automatically converts request bodies and schema definitions into realistic mock responses.
+
+#### Supported Formats
+
+- **Postman Collection v2.1.0**: Import requests, folders, and request bodies
+- **OpenAPI 3.0**: Import paths, operations, and response schemas with `$ref` support
+
+#### Import Process
+
+1. Click the import button in the PocketMock dashboard
+2. Select a Postman Collection or OpenAPI JSON file
+3. PocketMock automatically detects the format and converts it to mock rules
+4. Smart data generation intelligently infers mock data based on field names and types
+
+#### Smart Data Generation
+
+The import feature includes intelligent mock data generation:
+
+- **ID fields** (`id`, `user_id`, etc.) → `@guid`
+- **Names** (`name`, `username`) → `@cname`
+- **Email addresses** → `@email`
+- **Images** (`avatar`, `photo`) → `@image(200x200)`
+- **Dates/Times** (`created_at`, `date`) → `@date`
+- **Numbers** (`age`, `count`) → `@integer(1,100)`
+- **Booleans** (`is_active`, `has_permission`) → `@boolean`
+- **URLs** (`website`, `link`) → `@url`
+- **Phone numbers** → `@phone`
+
+#### Example: Postman Collection Import
+
+```json
+{
+  "info": { "name": "User API", "schema": "v2.1.0" },
+  "item": [
+    {
+      "name": "Create User",
+      "request": {
+        "method": "POST",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"name\": \"John\", \"email\": \"john@example.com\"}"
+        },
+        "url": { "raw": "/users" }
+      }
+    }
+  ]
+}
+```
+
+**Automatically converts to**:
+```javascript
+{
+  id: "generated-id",
+  method: "POST",
+  url: "/users",
+  response: {
+    name: "@cname",        // Smart inferred
+    email: "@email",       // Smart inferred
+    id: "@guid"           // Auto-added ID
+  }
+}
+```
+
+#### Example: OpenAPI Import
+
+```json
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/users/{id}": {
+      "get": {
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "string", "format": "uuid" },
+                    "name": { "type": "string" },
+                    "email": { "type": "string", "format": "email" },
+                    "created_at": { "type": "string", "format": "date-time" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+**Automatically converts to**:
+```javascript
+{
+  id: "generated-id",
+  method: "GET",
+  url: "/users/:id",      // {id} → :id conversion
+  response: {
+    id: "@guid",          // format: "uuid"
+    name: "@cname",       // string type + inference
+    email: "@email",      // format: "email"
+    created_at: "@date"   // format: "date-time"
+  }
+}
+```
+
+#### Variable Conversion
+
+The import feature automatically converts common variable patterns:
+
+- **Postman**: `{{userId}}` → `:userId`
+- **OpenAPI**: `{userId}` → `:userId`
+
+This ensures compatibility with PocketMock's URL matching system while maintaining clear parameter naming.
 
 ### Dynamic Response (Function Mock)
 

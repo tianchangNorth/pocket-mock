@@ -1,6 +1,6 @@
 // src/core/store.ts
 import { writable } from 'svelte/store';
-import { updateRules } from './interceptor';
+import { updateRules as updateInterceptorRules } from './interceptor';
 import type { MockRule } from './types';
 
 const STORAGE_KEY = 'pocket_mock_rules_v1';
@@ -14,6 +14,11 @@ export const appReady = new Promise<void>((resolve) => {
 });
 
 export const rules = writable<MockRule[]>([]);
+
+// Export a method to update rules directly (used by importers)
+export const updateRules = (newRules: MockRule[]) => {
+  rules.set(newRules);
+};
 
 // === Initialization logic ===
 export const initStore = async () => {
@@ -88,7 +93,7 @@ export const initStore = async () => {
 // === Subscription and save logic (保持不变) ===
 let saveTimer: any;
 rules.subscribe((value) => {
-  updateRules(value);
+  updateInterceptorRules(value);
 
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {

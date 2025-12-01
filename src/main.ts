@@ -1,11 +1,15 @@
 import Dashboard from './lib/dashboard.svelte'
 import { initInterceptor } from './core/interceptor'
-import { initStore } from './core/store';
+import { initStore, rules, addRule, deleteRule, updateRuleResponse } from './core/store';
+import { importPostmanCollection } from './core/importers/postman';
+import { importOpenAPI } from './core/importers/openapi';
 import axios from 'axios';
+import { get } from 'svelte/store';
 
 // 1. Initialize interceptor core
 initInterceptor();
 initStore();
+
 // 2. Mount Svelte application to document.body
 const app = new Dashboard({
   target: document.body,
@@ -13,109 +17,189 @@ const app = new Dashboard({
 
 export default app;
 
-// 创建测试按钮
-const testBtn = document.createElement('button');
-testBtn.textContent = "测试：fetch 请求 /todos/1";
-testBtn.style.position = "fixed";
-testBtn.style.bottom = "20px";
-testBtn.style.left = "20px";
-testBtn.style.padding = "10px 15px";
-testBtn.style.backgroundColor = "#007bff";
-testBtn.style.color = "white";
-testBtn.style.border = "none";
-testBtn.style.borderRadius = "5px";
-testBtn.style.cursor = "pointer";
-testBtn.style.zIndex = "999999";
-document.body.appendChild(testBtn);
+// === Integration Testing Suite ===
 
-const axiosTestBtn = document.createElement('button');
-axiosTestBtn.textContent = "测试：axios 请求 /api/demo?id=1";
-axiosTestBtn.style.position = "fixed";
-axiosTestBtn.style.bottom = "70px";
-axiosTestBtn.style.left = "20px";
-axiosTestBtn.style.padding = "10px 15px";
-axiosTestBtn.style.backgroundColor = "#28a745";
-axiosTestBtn.style.color = "white";
-axiosTestBtn.style.border = "none";
-axiosTestBtn.style.borderRadius = "5px";
-axiosTestBtn.style.cursor = "pointer";
-axiosTestBtn.style.zIndex = "999999";
-document.body.appendChild(axiosTestBtn);
+async function runIntegrationTests() {
+  console.group('%c 🧪 PocketMock Integration Tests ', 'background: #222; color: #bada55; font-size: 14px; padding: 4px;');
+  
+  let passed = 0;
+  let failed = 0;
+  const testIds: string[] = [];
 
-const axiosTestBtn2 = document.createElement('button');
-axiosTestBtn2.textContent = "测试：axios 请求 /todos/1";
-axiosTestBtn2.style.position = "fixed";
-axiosTestBtn2.style.bottom = "120px";
-axiosTestBtn2.style.left = "20px";
-axiosTestBtn2.style.padding = "10px 15px";
-axiosTestBtn2.style.backgroundColor = "#dc3545";
-axiosTestBtn2.style.color = "white";
-axiosTestBtn2.style.border = "none";
-axiosTestBtn2.style.borderRadius = "5px";
-axiosTestBtn2.style.cursor = "pointer";
-axiosTestBtn2.style.zIndex = "999999";
-document.body.appendChild(axiosTestBtn2);
-
-// 测试按钮功能
-async function testFetch() {
-  console.log("=== fetch 测试 ===");
-  console.log("发起 fetch 请求到 /todos/1");
-  try {
-    const res = await fetch('/todos/1');
-    const data = await res.json();
-    console.log("fetch 响应数据:", data);
-
-    alert(`Fetch 收到响应数据:\n${JSON.stringify(data, null, 2)}`);
-  } catch (e) {
-    console.error("fetch 请求失败:", e);
-    alert('Fetch 请求失败');
-  }
-}
-
-async function testAxiosDemo() {
-  console.log("=== axios 测试1 - /api/demo (应该被mock) ===");
-
-  try {
-    const res = await axios.get('/api/demo?id=1');
-    console.log("✅ axios /api/demo 响应数据:", res.data);
-    console.log("✅ axios 响应状态:", res.status);
-
-    alert(`✅ Axios /api/demo 收到响应:\n${JSON.stringify(res.data, null, 2)}\n\n状态码: ${res.status}`);
-  } catch (e: any) {
-    console.error("❌ axios /api/demo 请求失败:", e.message);
-    alert(`❌ Axios /api/demo 请求失败:\n${e.message}`);
-  }
-}
-
-async function testAxiosTodos() {
-  console.log("=== axios 测试2 - /todos/1 (真实请求) ===");
-  console.log("发起 axios 请求到 https://jsonplaceholder.typicode.com/todos/1");
-  try {
-    const res = await axios.get('https://jsonplaceholder.typicode.com/todos/1');
-    console.log("axios /todos/1 响应数据:", res.data);
-    console.log("axios 响应状态:", res.status);
-
-    alert(`Axios /todos/1 收到响应:\n${JSON.stringify(res.data, null, 2)}\n\n状态码: ${res.status}`);
-  } catch (e: any) {
-    console.error("axios /todos/1 请求失败:", e);
-    if (e.response) {
-      console.error("错误响应:", e.response.data);
-      console.error("错误状态:", e.response.status);
+  const assert = (condition: boolean, message: string) => {
+    if (condition) {
+      console.log(`%c ✅ PASS: ${message}`, 'color: green');
+      passed++;
+    } else {
+      console.error(`%c ❌ FAIL: ${message}`, 'color: red; font-weight: bold');
+      failed++;
     }
-    alert(`Axios /todos/1 请求失败:\n${e.message}`);
+  };
+
+  try {
+    // --- Test 1: Basic Rule CRUD & Fetch Interception ---
+    console.group('Test 1: Basic Rule CRUD & Fetch Interception');
+    const testUrl = '/api/test-crud-' + Date.now();
+    addRule(testUrl, 'GET', { msg: 'crud-success' });
+    
+    // Find the rule we just added to track it
+    let currentRules = get(rules);
+    const rule = currentRules.find(r => r.url === testUrl);
+    if (rule) testIds.push(rule.id);
+    
+    assert(!!rule, 'Rule should be added to store');
+
+    const res = await fetch(testUrl);
+    const data = await res.json();
+    assert(data.msg === 'crud-success', 'Fetch should interpret basic JSON response');
+    console.groupEnd();
+
+    // --- Test 2: XHR Interception ---
+    console.group('Test 2: XHR Interception');
+    const xhrPromise = new Promise<any>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', testUrl);
+      xhr.onload = () => resolve(JSON.parse(xhr.responseText));
+      xhr.onerror = reject;
+      xhr.send();
+    });
+    const xhrData = await xhrPromise;
+    assert(xhrData.msg === 'crud-success', 'XHR should intercept and return JSON');
+    console.groupEnd();
+
+    // --- Test 3: Dynamic Function Response ---
+    console.group('Test 3: Dynamic Function Response');
+    const dynUrl = '/api/test-dynamic-' + Date.now();
+    // We need to pass the function as a string because addRule might serialize it or we want to simulate UI input
+    // But addRule takes `any`. If we pass a function, it should work.
+    const dynFn = `(req) => ({ 
+      body: { 
+        received_id: req.query.id, 
+        method: req.method 
+      } 
+    })`;
+    addRule(dynUrl, 'GET', dynFn);
+    currentRules = get(rules);
+    const dynRule = currentRules.find(r => r.url === dynUrl);
+    if (dynRule) testIds.push(dynRule.id);
+
+    const dynRes = await fetch(`${dynUrl}?id=999`);
+    const dynData = await dynRes.json();
+    assert(dynData.received_id === '999', 'Dynamic response should parse query params');
+    assert(dynData.method === 'GET', 'Dynamic response should receive method');
+    console.groupEnd();
+
+    // --- Test 4: Smart Mock Data ---
+    console.group('Test 4: Smart Mock Data');
+    const smartUrl = '/api/test-smart-' + Date.now();
+    const smartTemplate = {
+      "users|2": [
+        {
+          "id": "@guid",
+          "name": "@cname",
+          "avatar": "@image(100x100)"
+        }
+      ]
+    };
+    addRule(smartUrl, 'POST', smartTemplate);
+    currentRules = get(rules);
+    const smartRule = currentRules.find(r => r.url === smartUrl);
+    if (smartRule) testIds.push(smartRule.id);
+
+    const smartRes = await axios.post(smartUrl);
+    const smartData = smartRes.data;
+    
+    assert(Array.isArray(smartData.users), 'Smart mock should generate array');
+    assert(smartData.users.length === 2, 'Smart mock should respect count |2');
+    assert(smartData.users[0].id.length > 10, 'Smart mock should generate GUID');
+    assert(smartData.users[0].avatar.includes('100x100'), 'Smart mock should generate Image URL with args');
+    console.groupEnd();
+
+    // --- Test 5: Import Postman ---
+    console.group('Test 5: Postman Import');
+    const postmanJson = {
+      info: { name: 'Test Collection', schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json' },
+      item: [{
+        name: 'Postman Req',
+        request: {
+          method: 'PUT',
+          url: { raw: 'https://api.example.com/postman/test' },
+          body: { mode: 'raw', raw: '{"status":"imported"}' }
+        }
+      }]
+    };
+    const importedPostmanRules = importPostmanCollection(postmanJson as any);
+    assert(importedPostmanRules.length === 1, 'Postman import should return 1 rule');
+    assert(importedPostmanRules[0].method === 'PUT', 'Postman import should map method');
+    assert(importedPostmanRules[0].url === 'https://api.example.com/postman/test', 'Postman import should map URL');
+    // We don't add these to store to avoid clutter, just checking logic
+    console.groupEnd();
+
+    // --- Test 6: Import OpenAPI ---
+    console.group('Test 6: OpenAPI Import');
+    const openApiJson = {
+      openapi: '3.0.0',
+      info: { title: 'Test API', version: '1.0' },
+      paths: {
+        '/openapi/users': {
+          get: {
+            responses: {
+              '200': {
+                content: {
+                  'application/json': {
+                    schema: {
+                      type: 'object',
+                      properties: {
+                        id: { type: 'string', format: 'uuid' }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    };
+    const importedOpenApiRules = importOpenAPI(openApiJson as any);
+    assert(importedOpenApiRules.length === 1, 'OpenAPI import should return 1 rule');
+    assert(importedOpenApiRules[0].response.id === '@guid', 'OpenAPI import should infer smart mock');
+    console.groupEnd();
+
+  } catch (e: any) {
+    console.error('Test Suite Crashed:', e);
+    failed++;
+  } finally {
+    // Cleanup
+    console.log('Cleaning up test rules...');
+    testIds.forEach(id => deleteRule(id));
+    
+    console.groupEnd();
+    console.log(`%c Test Summary: ${passed} Passed, ${failed} Failed `, failed === 0 ? 'background: green; color: white; padding: 4px;' : 'background: red; color: white; padding: 4px;');
+    
+    if (failed === 0) {
+      alert(`🎉 All ${passed} tests passed! Check console for details.`);
+    } else {
+      alert(`⚠️ ${failed} tests failed. Check console for details.`);
+    }
   }
 }
 
-testBtn.onclick = testFetch;
-axiosTestBtn.onclick = testAxiosDemo;
-axiosTestBtn2.onclick = testAxiosTodos;
+// UI Button for Tests
+const runTestBtn = document.createElement('button');
+runTestBtn.textContent = "▶ Run Integration Tests";
+runTestBtn.style.position = "fixed";
+runTestBtn.style.bottom = "20px";
+runTestBtn.style.left = "20px";
+runTestBtn.style.padding = "10px 15px";
+runTestBtn.style.backgroundColor = "#646cff";
+runTestBtn.style.color = "white";
+runTestBtn.style.border = "none";
+runTestBtn.style.borderRadius = "6px";
+runTestBtn.style.cursor = "pointer";
+runTestBtn.style.zIndex = "999999";
+runTestBtn.style.fontWeight = "bold";
+runTestBtn.style.boxShadow = "0 4px 12px rgba(0,0,0,0.2)";
+runTestBtn.onclick = runIntegrationTests;
+document.body.appendChild(runTestBtn);
 
-// 自动测试请求
-setTimeout(async () => {
-  try {
-    const res = await axios.get('/api/demo?id=1');
-    console.log("🎉 自动测试成功! 响应数据:", res.data);
-  } catch (e: any) {
-    console.error("❌ 自动测试失败:", e.message);
-  }
-}, 1500);

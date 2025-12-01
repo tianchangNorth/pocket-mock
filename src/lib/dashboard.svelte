@@ -1,7 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { rules, toggleRule, updateRuleResponse, addRule, deleteRule, updateRuleDelay, updateRuleStatus, updateRuleHeaders, updateRuleMethod, updateRuleUrl } from '../core/store';
+  import { rules, toggleRule, updateRuleResponse, addRule, deleteRule, updateRuleDelay, updateRuleStatus, updateRuleHeaders, updateRuleMethod, updateRuleUrl, updateRules } from '../core/store';
   import { requestLogs } from '../core/log-store';
+  import { importPostmanCollection } from '../core/importers/postman';
+  import { importOpenAPI } from '../core/importers/openapi';
   import Button from './ui/Button.svelte';
   import Input from './ui/Input.svelte';
   import Select from './ui/Select.svelte';
@@ -26,11 +28,28 @@
   
   // Main tab status
   let activeMainTab: 'rules' | 'network' = 'rules';
+  
+  // Rule Filter State
+  let ruleFilterText = "";
+  let ruleMethodFilter = "ALL";
+  let ruleStatusFilter = "ALL"; // ALL | ENABLED | DISABLED
+
+  $: filteredRules = $rules.filter(rule => {
+    const matchText = rule.url.toLowerCase().includes(ruleFilterText.toLowerCase());
+    const matchMethod = ruleMethodFilter === "ALL" || rule.method === ruleMethodFilter;
+    const matchStatus = ruleStatusFilter === "ALL" 
+      ? true 
+      : ruleStatusFilter === "ENABLED" ? rule.enabled : !rule.enabled;
+    return matchText && matchMethod && matchStatus;
+  });
 
   // Network Panel State
   let networkFilter = "";
   let networkTypeFilter: 'all' | 'mock' | 'real' = 'all';
   let expandedLogId: string | null = null;
+  
+  // File input ref
+  let fileInput: HTMLInputElement;
 
   $: filteredLogs = $requestLogs.filter(log => {
     const matchText = log.url.toLowerCase().includes(networkFilter.toLowerCase()) || log.method.toLowerCase().includes(networkFilter.toLowerCase());
@@ -50,6 +69,58 @@
   let newRuleMethod = "GET";
 
   const METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"];
+  
+  function triggerImport() {
+    fileInput.click();
+  }
+
+  async function handleFileSelect(e: Event) {
+    const input = e.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    
+    const file = input.files[0];
+    const reader = new FileReader();
+    
+    reader.onload = (event) => {
+      try {
+        const content = event.target?.result as string;
+        const json = JSON.parse(content);
+        
+        let newRules: any[] = [];
+        let formatName = '';
+
+        // Detect format
+        if (json.info && json.item) {
+           // Postman
+           formatName = 'Postman Collection';
+           newRules = importPostmanCollection(json);
+        } else if (json.openapi || json.swagger) {
+           // OpenAPI / Swagger
+           formatName = 'OpenAPI/Swagger';
+           newRules = importOpenAPI(json);
+        } else {
+           showToast("Unknown file format. Supported: Postman, OpenAPI 3.0", "error");
+           return;
+        }
+
+        if (newRules.length > 0) {
+           // Append to existing rules
+           rules.update(current => [...current, ...newRules]);
+           showToast(`Imported ${newRules.length} rules from ${formatName}`, "success");
+        } else {
+           showToast(`No valid rules found in ${formatName} file`, "warning");
+        }
+
+      } catch (err) {
+        console.error(err);
+        showToast("Failed to parse file", "error");
+      } finally {
+        input.value = ''; // Reset input
+      }
+    };
+    
+    reader.readAsText(file);
+  }
 
   function createRuleFromLog(log: any) {
     let responseBody = log.responseBody;
@@ -273,7 +344,13 @@
       {/if}
       {#if !minimized}
         <div class="add-btn-wrapper" class:visible={activeMainTab === 'rules'}>
-          <Button size="sm" variant="ghost" icon on:click={() => showAddPanel = !showAddPanel}>
+          <input type="file" accept=".json" style="display:none" bind:this={fileInput} on:change={handleFileSelect} />
+          <Button size="sm" variant="ghost" icon on:click={triggerImport} title="Import Postman Collection">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+            </svg>
+          </Button>
+          <Button size="sm" variant="ghost" icon on:click={() => showAddPanel = !showAddPanel} title="Add New Rule">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M12 5v14M5 12h14"/>
             </svg>
@@ -397,6 +474,38 @@
             </div>
           </div>
         {/if}
+        
+        <!-- Rule Filter Toolbar -->
+        {#if $rules.length > 0}
+          <div class="network-toolbar" style="margin-bottom: 12px; border-radius: 8px; border: 1px solid var(--pm-border);">
+            <div class="search-box">
+              <Input placeholder="Search URL..." bind:value={ruleFilterText} />
+            </div>
+             <div class="type-filter" style="width: 80px;">
+              <Select 
+                options={['ALL', ...METHODS]} 
+                bind:value={ruleMethodFilter} 
+              />
+            </div>
+            <div class="type-filter" style="width: 85px;">
+              <Select 
+                options={['ALL', 'ENABLED', 'DISABLED']} 
+                bind:value={ruleStatusFilter} 
+              />
+            </div>
+             {#if ruleFilterText || ruleMethodFilter !== 'ALL' || ruleStatusFilter !== 'ALL'}
+                <Button icon size="sm" on:click={() => {
+                  ruleFilterText = "";
+                  ruleMethodFilter = "ALL";
+                  ruleStatusFilter = "ALL";
+                }} title="Clear filters">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 6L6 18M6 6l12 12"/>
+                  </svg>
+                </Button>
+             {/if}
+          </div>
+        {/if}
 
         {#if $rules.length === 0 && !showAddPanel}
           <div class="empty-state">
@@ -404,8 +513,17 @@
             <p>No active rules</p>
             <p class="sub-text">Click the + button above to mock your first API</p>
           </div>
+        {:else if filteredRules.length === 0 && !showAddPanel}
+           <div class="empty-state">
+            <p>No matching rules found</p>
+            <Button size="sm" variant="ghost" on:click={() => {
+                  ruleFilterText = "";
+                  ruleMethodFilter = "ALL";
+                  ruleStatusFilter = "ALL";
+            }}>Clear Filters</Button>
+          </div>
         {:else}
-          {#each $rules as rule (rule.id)}
+          {#each filteredRules as rule (rule.id)}
             <div class="card">
 
                 <!-- Preview Mode -->

@@ -65,7 +65,7 @@
 ## 🚀 阶段二：智能化与场景管理 (v2.x)
 **目标**：解决“造数据难”和“状态切换繁琐”的问题，支持复杂业务流模拟。
 
-### 2.1 智能数据生成 (Smart Mock Data)
+### 2.1 智能数据生成 (Smart Mock Data) ✅ (Completed)
 手写大量 JSON 数据非常耗时。
 - **功能特性**:
   - **集成 Faker 语法**: 在 JSON 中直接使用占位符。
@@ -92,6 +92,17 @@
 - **功能特性**:
   - 内置轻量级内存数据库（类似 `localStorage` 或 `IndexedDB` 封装）。
   - **示例**: POST `/todos` 后，GET `/todos` 能真正返回新增的那条数据，刷新页面后可选是否持久化。
+
+### 2.4 配置导入 (Config Import)
+解决现有配置（如 Postman、Apifox）无法直接在 PocketMock 中复用的问题。
+- **功能特性**:
+  - 支持导入 Postman Collection v2.1 格式。
+  - 支持导入 OpenAPI (Swagger) 3.0 格式。
+  - 智能将导入的接口转换为 PocketMock 规则。
+  - 自动为导入的接口生成默认的 Mock 数据（结合 2.1 智能数据生成）。
+- **技术方案**:
+  - 在 `src/core/importers/` 目录下实现不同的解析器。
+  - UI (Dashboard) 提供导入入口。
 
 ---
 
