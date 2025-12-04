@@ -1,5 +1,5 @@
-import { requestLogs } from "./log-store";
-import { appReady } from './store';
+import { requestLogs } from "../store/log-store";
+import { appReady } from '../store/store';
 import { matchRoute } from './matcher';
 import { generateMockData } from './smart-mock';
 

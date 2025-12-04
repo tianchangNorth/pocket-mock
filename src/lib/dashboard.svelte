@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { rules, toggleRule, updateRuleResponse, addRule, deleteRule, updateRuleDelay, updateRuleStatus, updateRuleHeaders, updateRuleMethod, updateRuleUrl, updateRules } from '../core/store';
-  import { requestLogs } from '../core/log-store';
+  import { rules, toggleRule, updateRuleResponse, addRule, deleteRule, updateRuleDelay, updateRuleStatus, updateRuleHeaders, updateRuleMethod, updateRuleUrl, updateRules } from '../store/store';
+  import { requestLogs } from '../store/log-store';
   import { importPostmanCollection } from '../core/importers/postman';
   import { importOpenAPI } from '../core/importers/openapi';
   import Button from './ui/Button.svelte';

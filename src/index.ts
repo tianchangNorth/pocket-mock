@@ -1,7 +1,7 @@
 // src/index.ts
 import Dashboard from './lib/dashboard.svelte';
 import { initInterceptor } from './core/interceptor';
-import { initStore } from './core/store';
+import { initStore } from './store/store';
 import globalStyles from './app.css?inline';
 import type { MockRule } from './core/types';
 
