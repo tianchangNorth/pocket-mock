@@ -1,5 +1,41 @@
 # Changelog
 
+## v1.1.0 - 2025-12-05
+
+### Refactor
+
+- **Core Module Restructure**:
+  - Optimized `src/core` directory structure for better modularity and maintainability.
+  - Interceptor logic separated into `adapters/`, `engine/`, `manager/` sub-modules.
+  - Consolidated core public API exports into `src/core/index.ts`.
+- **Dashboard UI Componentization**:
+  - `src/lib/dashboard.svelte` refactored into smaller, single-responsibility Svelte components.
+  - UI state management extracted to `src/lib/stores/dashboard-store.ts`.
+
+### Tests
+
+- **Enhanced Test Coverage**:
+  - Added unit tests for `src/core/engine/handler.ts`, `src/core/manager/rule-manager.ts`, and `src/core/utils/http.ts`.
+  - Resolved `window`, `Headers`, and `Response` global object mocking issues in test environment.
+  - Restructured `test/` directory to mirror `src/core/` for better organization.
+
+### Documentation
+
+- **README Update**:
+  - Updated `README.md` and `README.zh-CN.md` with:
+    - Table of Contents.
+    - Comparison table against other mocking tools.
+    - Improved Smart Generator quick-reference.
+    - Enhanced code examples and clarifications.
+- **Contribution Guidelines**:
+  - Created `CONTRIBUTING.md` and `CONTRIBUTING.zh-CN.md` with project structure, development setup, and PR guidelines.
+
+### Improvements
+
+- **Rule Editor Stability**: Fixed an issue in `RuleEditor.svelte` where user input could be inadvertently overwritten during editing due to prop updates.
+
+---
+
 ## v1.0.2 - 2025-12-05
 
 ### New Features
