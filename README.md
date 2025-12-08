@@ -22,6 +22,7 @@
   - [Config Import](#-config-import)
   - [Dynamic Response](#dynamic-response-function-mock)
   - [Network Panel](#comprehensive-network-panel)
+- [Roadmap](#roadmap)
 - [Technical Architecture](#technical-architecture)
 - [Contributing](#contributing)
 
@@ -199,6 +200,10 @@ The built-in Network panel logs all network requests (both mocked and real) in r
 - **Monkey Patching**: Intercepts requests by overriding `window.fetch` and extending `XMLHttpRequest` prototype chain.
 - **Shadow DOM**: Encapsulates debugging UI in Shadow Root for complete style sandboxing.
 - **Vite Library Mode**: Uses Vite's library mode with `css: 'injected'` strategy to inline all CSS into JS for **single-file import** experience.
+
+## Roadmap
+
+Check out our [Roadmap](ROADMAP.md) to see what's next for PocketMocker and how you can contribute to its future!
 
 ## Contributing
 
