@@ -489,6 +489,11 @@ function log(method: string, url: string, status: number, data: any, time: numbe
   const entry = document.createElement('div');
   entry.className = `log-entry ${isError ? 'error' : 'success'}`;
 
+
+  const formattedData = typeof data === 'string' 
+    ? data 
+    : JSON.stringify(data, null, 2);
+
   entry.innerHTML = `
     <div class="log-meta">
       <span class="method" style="color: ${color}">${method}</span>
@@ -496,8 +501,11 @@ function log(method: string, url: string, status: number, data: any, time: numbe
       <span class="status">Status: <b>${status}</b></span>
       <span class="status">Time: ${time}ms</span>
     </div>
-    <div class="log-json">${JSON.stringify(data, null, 2)}</div>
+    <div class="log-json"></div>
   `;
+  
+  const jsonDiv = entry.querySelector('.log-json')!;
+  jsonDiv.textContent = formattedData;
 
   const placeholder = document.querySelector('.log-placeholder');
   if (placeholder) placeholder.remove();
