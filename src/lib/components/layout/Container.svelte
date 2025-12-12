@@ -3,7 +3,6 @@
   import { uiState } from '@/lib/stores/dashboard-store';
   import Header from './Header.svelte';
   import Tabs from './Tabs.svelte';
-  import Toast from '@/lib/ui/Toast.svelte';
 
   let isDragging = false;
   let isResizing = false;
@@ -14,6 +13,7 @@
   let initialBottom = 0;
   let initialWidth = 0;
   let initialHeight = 0;
+  let hasMoved = false;
   let containerRef: HTMLDivElement;
   
   let width = 400;
@@ -73,6 +73,8 @@
     initialRight = viewportWidth - rect.right;
     initialBottom = viewportHeight - rect.bottom;
 
+    containerRef.style.transition = 'none';
+
     window.addEventListener('mousemove', handleResizeMove);
     window.addEventListener('mouseup', handleResizeEnd);
   }
@@ -116,6 +118,9 @@
 
   function handleResizeEnd() {
     isResizing = false;
+    if (containerRef) {
+       containerRef.style.transition = '';
+    }
     window.removeEventListener('mousemove', handleResizeMove);
     window.removeEventListener('mouseup', handleResizeEnd);
   }
@@ -126,6 +131,7 @@
     if ((e.target as HTMLElement).classList.contains('resize-handle')) return;
 
     isDragging = true;
+    hasMoved = false;
     startX = e.clientX;
     startY = e.clientY;
     
@@ -135,11 +141,6 @@
     
     initialRight = viewportWidth - rect.right;
     initialBottom = viewportHeight - rect.bottom;
-    
-    containerRef.style.top = 'auto';
-    containerRef.style.left = 'auto';
-    containerRef.style.right = `${initialRight}px`;
-    containerRef.style.bottom = `${initialBottom}px`;
     
     containerRef.style.transition = 'none';
 
@@ -152,6 +153,16 @@
     
     const dx = e.clientX - startX;
     const dy = e.clientY - startY;
+    
+    if (!hasMoved) {
+      if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+        hasMoved = true;
+        containerRef.style.top = 'auto';
+        containerRef.style.left = 'auto';
+      } else {
+        return;
+      }
+    }
     
     let newRight = initialRight - dx;
     let newBottom = initialBottom - dy;
@@ -171,6 +182,9 @@
   }
 
   function handleMouseUp() {
+    if (isDragging && !hasMoved && $uiState.minimized) {
+      uiState.toggleMinimized();
+    }
     isDragging = false;
     if (containerRef) {
        containerRef.style.transition = '';
@@ -204,7 +218,6 @@
   <Header on:mousedown={handleMouseDown} />
 
   {#if !$uiState.minimized}
-    <Toast />
     
     {#if !$uiState.editingRuleId}
       <Tabs />
@@ -245,42 +258,45 @@
   * { box-sizing: border-box; }
 
   .container {
-    --pm-bg: #1a1a1a;
-    --pm-bg-secondary: #252525; 
-    --pm-bg-tertiary: #2a2a2a;
+    --pm-bg: rgba(26, 26, 26, 0.75);
+    --pm-bg-secondary: rgba(37, 37, 37, 0.6); 
+    --pm-bg-tertiary: rgba(42, 42, 42, 0.6);
     
-    --pm-border: rgba(255,255,255,0.08);
-    --pm-border-focus: rgba(255,255,255,0.2);
+    --pm-border: rgba(255,255,255,0.1);
+    --pm-border-focus: rgba(255,255,255,0.25);
     
-    --pm-text-primary: #e0e0e0;
-    --pm-text-secondary: #888;
-    --pm-text-placeholder: #666;
+    --pm-text-primary: #f0f0f0;
+    --pm-text-secondary: #9ca3af;
+    --pm-text-placeholder: #6b7280;
     
-    --pm-primary: #646cff;
-    --pm-primary-hover: #747bff;
+    --pm-primary: #818cf8;
+    --pm-primary-rgb: 129, 140, 248;
+    --pm-primary-hover: #a5b4fc;
     
-    --pm-danger: #ff4646;
-    --pm-danger-bg: rgba(255, 70, 70, 0.1);
+    --pm-danger: #f87171;
+    --pm-danger-bg: rgba(248, 113, 113, 0.15);
     
-    --pm-shadow: 0 10px 40px rgba(0,0,0,0.4);
-    --pm-hover-bg: rgba(255,255,255,0.05);
+    --pm-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1);
+    --pm-hover-bg: rgba(255,255,255,0.08);
 
     /* Component specific mappings */
-    --pm-input-bg: #111;
-    --pm-input-bg-focus: #000;
+    --pm-input-bg: rgba(0,0,0,0.3);
+    --pm-input-bg-focus: rgba(0,0,0,0.5);
     
-    --pm-btn-secondary-bg: #333;
-    --pm-btn-secondary-hover: #444;
+    --pm-btn-secondary-bg: rgba(255,255,255,0.05);
+    --pm-btn-secondary-hover: rgba(255,255,255,0.1);
     
-    --pm-switch-off: #444;
+    --pm-switch-off: rgba(255,255,255,0.15);
 
     position: fixed;
     bottom: 24px;
     right: 24px;
     background: var(--pm-bg);
     color: var(--pm-text-primary);
-    border-radius: 12px;
-    box-shadow: var(--pm-shadow), 0 0 0 1px var(--pm-border);
+    border-radius: 16px;
+    box-shadow: var(--pm-shadow);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     font-size: 13px;
     line-height: 1.5;
@@ -288,6 +304,7 @@
     flex-direction: column;
     z-index: 99999;
     overflow: hidden;
+    transition: width 0.1s ease, height 0.1s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .resize-handle {
@@ -339,33 +356,34 @@
 
   @media (prefers-color-scheme: light) {
     .container {
-      --pm-bg: #ffffff;
-      --pm-bg-secondary: #ffffff;
-      --pm-bg-tertiary: #f8fafc;
+      --pm-bg: rgba(255, 255, 255, 0.75);
+      --pm-bg-secondary: rgba(255, 255, 255, 0.6);
+      --pm-bg-tertiary: rgba(248, 250, 252, 0.7);
       
-      --pm-border: #e2e8f0;
-      --pm-border-focus: #cbd5e1;
+      --pm-border: rgba(226, 232, 240, 0.6);
+      --pm-border-focus: rgba(203, 213, 225, 0.8);
       
       --pm-text-primary: #1e293b;
       --pm-text-secondary: #64748b;
       --pm-text-placeholder: #94a3b8;
       
-      --pm-primary: #2563eb;
-      --pm-primary-hover: #1d4ed8;
+      --pm-primary: #3b82f6;
+      --pm-primary-rgb: 59, 130, 246;
+      --pm-primary-hover: #2563eb;
       
-      --pm-danger: #dc2626;
-      --pm-danger-bg: #fee2e2;
+      --pm-danger: #ef4444;
+      --pm-danger-bg: rgba(254, 226, 226, 0.7);
       
-      --pm-shadow: 0 10px 30px -5px rgba(0,0,0,0.15);
-      --pm-hover-bg: rgba(0,0,0,0.04);
+      --pm-shadow: 0 20px 40px -5px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.05);
+      --pm-hover-bg: rgba(0,0,0,0.05);
 
-      --pm-input-bg: #fff;
-      --pm-input-bg-focus: #fff;
+      --pm-input-bg: rgba(255,255,255,0.6);
+      --pm-input-bg-focus: rgba(255,255,255,0.9);
       
-      --pm-btn-secondary-bg: #fff;
-      --pm-btn-secondary-hover: #f1f5f9;
+      --pm-btn-secondary-bg: rgba(255,255,255,0.5);
+      --pm-btn-secondary-hover: rgba(255,255,255,0.8);
       
-      --pm-switch-off: #e2e8f0;
+      --pm-switch-off: rgba(226, 232, 240, 0.8);
     }
   }
 
@@ -374,6 +392,42 @@
     min-width: 140px;
     height: auto;
     background: var(--pm-bg-tertiary);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform-origin: bottom right;
+    border-radius: 24px;
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    border: 2px solid transparent; /* Pre-reserve border space to avoid layout shift */
+  }
+
+  @property --angle {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+  }
+
+  @keyframes rotate-border {
+    to {
+      --angle: 360deg;
+    }
+  }
+
+  .container.minimized:hover {
+    box-shadow: 0 12px 32px rgba(0,0,0,0.2), 
+                0 0 20px rgba(var(--pm-primary-rgb), 0.2);
+    transform: scale(1.05) translateY(-2px);
+    z-index: 100000;
+    
+    /* Elegant rotating border */
+    background: 
+      linear-gradient(var(--pm-bg-tertiary), var(--pm-bg-tertiary)) padding-box,
+      conic-gradient(from var(--angle), 
+        rgba(var(--pm-primary-rgb), 0.1) 0%, 
+        var(--pm-primary) 50%, 
+        rgba(var(--pm-primary-rgb), 0.1) 100%
+      ) border-box;
+    border: 2px solid transparent;
+    animation: rotate-border 4s linear infinite;
   }
 
   .content {

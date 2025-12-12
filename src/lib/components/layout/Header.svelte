@@ -57,9 +57,15 @@
   }
 </script>
 
-<div class="header" role="button" aria-label="Drag to move panel" tabindex="0" on:mousedown>
+<div 
+  class="header" 
+  class:minimized={$uiState.minimized}
+  role="button" 
+  tabindex="0" 
+  on:mousedown
+>
   <div class="title-area">
-    <h3>PocketMock</h3>
+    <h3>PocketMocker</h3>
     {#if $uiState.minimized && $rules.length > 0}
       <span class="rule-count">{$rules.length}</span>
     {/if}
@@ -82,11 +88,11 @@
   
   <button class="toggle-btn" on:click={() => uiState.toggleMinimized()} title={$uiState.minimized ? 'Expand panel' : 'Collapse panel'}>
     {#if $uiState.minimized}
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <!-- <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M12 5v14M5 12h14"/>
-      </svg>
+      </svg> -->
     {:else}
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg width="32" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M5 12h14"/>
       </svg>
     {/if}
@@ -100,8 +106,11 @@
     align-items: center;
     padding: 12px 16px;
     background: var(--pm-bg-tertiary); 
-    border-bottom: 1px solid var(--pm-border);
     cursor: move; 
+  }
+
+  .header.minimized {
+    cursor: pointer;
   }
 
   .title-area {
@@ -114,6 +123,7 @@
     margin: 0;
     font-size: 14px;
     font-weight: 600;
+    user-select: none;
     color: var(--pm-text-primary);
   }
 

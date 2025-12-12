@@ -56,13 +56,14 @@
     border-radius: 8px;
     margin-bottom: 12px;
     border: 1px solid var(--pm-border);
-    transition: transform 0.2s, border-color 0.2s;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
     box-shadow: 0 1px 2px rgba(0,0,0,0.05);
   }
 
   .card:hover {
-    border-color: var(--pm-border-focus);
+    border-color: rgba(var(--pm-primary-rgb), 0.4);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05), 0 0 8px rgba(var(--pm-primary-rgb), 0.15);
     transform: translateY(-1px);
   }
 

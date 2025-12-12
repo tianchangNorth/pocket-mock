@@ -5,7 +5,10 @@
   import RuleList from './components/rules/RuleList.svelte';
   import RuleEditor from './components/rules/RuleEditor.svelte';
   import NetworkLogList from './components/network/NetworkLogList.svelte';
+  import Toast from '@/lib/ui/Toast.svelte';
 </script>
+
+<Toast />
 
 <Container>
   {#if $uiState.editingRuleId}

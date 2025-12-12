@@ -10,7 +10,6 @@
 <style>
   .main-tabs {
     display: flex;
-    padding: 0 16px;
     border-bottom: 1px solid var(--pm-border);
     background: var(--pm-bg-tertiary);
   }

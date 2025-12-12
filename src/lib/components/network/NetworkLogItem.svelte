@@ -78,11 +78,15 @@
     border: 1px solid var(--pm-border);
     border-left: 3px solid transparent;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
   }
   
   .log-item:hover {
-    border-color: var(--pm-border-focus);
+    border-color: rgba(var(--pm-primary-rgb), 0.4);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05), 0 0 8px rgba(var(--pm-primary-rgb), 0.15);
+    transform: translateY(-1px);
+    z-index: 1;
   }
   
   .log-item.expanded {
