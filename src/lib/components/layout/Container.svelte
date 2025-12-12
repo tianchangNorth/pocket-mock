@@ -193,16 +193,6 @@
   }
 </script>
 
-<svelte:head>
-  <style>
-    @property --pm-border-angle {
-      syntax: '<angle>';
-      initial-value: 0deg;
-      inherits: false;
-    }
-  </style>
-</svelte:head>
-
 <div 
   class="container" 
   class:minimized={$uiState.minimized} 
@@ -443,3 +433,13 @@
       overflow-y: hidden;
   }
 </style>
+
+<svelte:head>
+  <style>
+    @property --pm-border-angle {
+      syntax: '<angle>';
+      initial-value: 0deg;
+      inherits: false;
+    }
+  </style>
+</svelte:head>
