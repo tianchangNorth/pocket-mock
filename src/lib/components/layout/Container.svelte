@@ -189,10 +189,19 @@
     if (containerRef) {
        containerRef.style.transition = '';
     }
-    window.removeEventListener('mousemove', handleMouseMove);
     window.removeEventListener('mouseup', handleMouseUp);
   }
 </script>
+
+<svelte:head>
+  <style>
+    @property --pm-border-angle {
+      syntax: '<angle>';
+      initial-value: 0deg;
+      inherits: false;
+    }
+  </style>
+</svelte:head>
 
 <div 
   class="container" 
@@ -279,7 +288,6 @@
     --pm-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1);
     --pm-hover-bg: rgba(255,255,255,0.08);
 
-    /* Component specific mappings */
     --pm-input-bg: rgba(0,0,0,0.3);
     --pm-input-bg-focus: rgba(0,0,0,0.5);
     
@@ -397,18 +405,12 @@
     border-radius: 24px;
     backdrop-filter: blur(12px) saturate(180%);
     -webkit-backdrop-filter: blur(12px) saturate(180%);
-    border: 2px solid transparent; /* Pre-reserve border space to avoid layout shift */
-  }
-
-  @property --angle {
-    syntax: '<angle>';
-    initial-value: 0deg;
-    inherits: false;
+    border: 2px solid transparent;
   }
 
   @keyframes rotate-border {
     to {
-      --angle: 360deg;
+      --pm-border-angle: 360deg;
     }
   }
 
@@ -418,10 +420,9 @@
     transform: scale(1.05) translateY(-2px);
     z-index: 100000;
     
-    /* Elegant rotating border */
     background: 
       linear-gradient(var(--pm-bg-tertiary), var(--pm-bg-tertiary)) padding-box,
-      conic-gradient(from var(--angle), 
+      conic-gradient(from var(--pm-border-angle), 
         rgba(var(--pm-primary-rgb), 0.1) 0%, 
         var(--pm-primary) 50%, 
         rgba(var(--pm-primary-rgb), 0.1) 100%
