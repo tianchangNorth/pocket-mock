@@ -34,34 +34,56 @@
 
 </div>
 
----
-
 ## What is PocketMocker?
 
-**PocketMocker** is a zero-intrusion, visual HTTP mocking tool that works directly **inside your browser**. Unlike traditional tools like Postman or Mock.js, it embeds a powerful debugging panel into your page, allowing you to intercept and modify HTTP requests in real-time during development.
+**PocketMocker** is the **In-Page API Mocking & Debugging Tool** built for frontend developers.
 
-**Perfect for**:
-- Intercepting `fetch` and `XMLHttpRequest` on the fly
-- Visual editing of mock responses
-- Real-time network monitoring
-- Testing error states and network latency
-- Team collaboration with shared configurations
+It embeds a powerful control panel directly into your browser, allowing you to intercept, mock, and tweak HTTP responses in real-time. It bridges the gap between API design and UI implementation.
 
+---
+
+## Core Capabilities: Total HTTP Control
+
+PocketMocker gives you **God-mode access** to your HTTP requests. Stop waiting for the backend—you are the master of your network.
+
+### Timing Control
+*   **Latency Simulation**: Set precise millisecond delays to test loading states.
+*   **Race Condition Testing**: Deliberately make request B return before request A to verify if your code handles async race conditions correctly.
+*   **Infinite Loading**: Set a massive delay to focus on polishing your Skeleton screens and loading animations.
+
+### Status Forcing
+*   **Instant Errors**: Force endpoints to return 500, 503, or 404 to verify Error Boundaries and fallback UIs.
+*   **Auth Simulation**: Force return 401 (Unauthorized) or 403 (Forbidden) to test login redirects and permission guards.
+*   **Lock Empty State**: Force return 204 or an empty array to tweak the layout of your "No Data" pages.
+
+### Payload Manipulation
+*   **Data Injection**: Inject extremely long text, boundary values, or special characters in real-time to test UI robustness.
+*   **Type Chaos**: Field expected a `number` but got a `string`? Value expected to be present but is `null`? Reproduce these backend "surprises" instantly to ensure your frontend doesn't crash.
+
+---
+
+## Common Debugging Scenarios
+
+*   ✅ **The "Infinite Loading" Test**: Set a huge delay to fine-tune every frame of your loading animation.
+*   ✅ **The "Chaos Monkey" Test**: Randomly toggle success/failure states to test app resilience.
+*   ✅ **The "Massive Data" Test**: Use smart generation syntax to create lists with 1000+ items instantly to test virtualization and scrolling performance.
+
+---
 
 https://github.com/user-attachments/assets/e7501191-7ef1-4bd4-bd21-6500585fe4ad.mp4
 
----
-
 ## Why PocketMocker?
 
-| Feature | PocketMocker | Mock.js | Postman | MSW |
-|:---|:---:|:---:|:---:|:---:|
-| **Browser Integration** | ✅ (In-page UI) | ✅ | ❌ (Independent App) | ✅ (No UI) |
-| **Visual Editing** | ✅ | ❌ | ✅ | ❌ |
-| **Network Logging** | ✅ | ❌ | ✅ | ❌ |
-| **Real-time Toggle** | ✅ | ❌ | ❌ | ❌ |
-| **Smart Data Gen** | ✅ | ✅ | ❌ | ❌ |
-| **Config Import** | ✅ (Postman/OA3) | ❌ | ✅ | ❌ |
+**Use Apifox / Postman for:**
+*   API Design & Documentation
+*   Backend Contract Testing
+*   Team-level API Management
+
+**Use PocketMocker for:**
+*   **Rapid UI Development**: "I need this list to be empty *right now*."
+*   **Visual Debugging**: "Why is my error boundary not showing up?"
+*   **Zero Context Switching**: Stay in your browser, stay in the flow.
+*   **Git-Friendly**: Share mock rules via config files, just like your code.
 
 ---
 
@@ -277,6 +299,6 @@ MIT © [tianchangNorth](https://github.com/tianchangNorth)
 
 <div align="center">
 
-**Happy Mocking!** 🎉
+**Master HTTP, Master Your Frontend!**
 
 </div>
