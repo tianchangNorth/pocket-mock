@@ -70,10 +70,7 @@ Need to test a long username? A missing avatar? Or a specific price format? Just
 ### Edge Case Verification
 Simulate network delays (latency), timeout errors, or unauthorized (401) responses to ensure your application handles exceptions gracefully.
 
----
-
-https://github.com/user-attachments/assets/e7501191-ef1-4bd4-bd21-6500585fe4ad.mp4
-
+https://github.com/user-attachments/assets/e7501191-7ef1-4bd4-bd21-6500585fe4ad.mp4
 ---
 
 ## Installation
