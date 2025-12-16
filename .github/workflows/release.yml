@@ -29,46 +29,89 @@ jobs:
       - name: Generate Release Notes
         id: release_notes
         run: |
-          # Initialize changelog
-          CHANGELOG="## Changes since ${{ steps.prev_tag.outputs.tag }}\n\n"
+          # Get current version (remove 'v' prefix if present)
+          CURRENT_VERSION=${{ github.ref_name }}
+          CURRENT_VERSION=${CURRENT_VERSION#v}
 
-          # Get commit messages between tags
-          if [ -n "${{ steps.prev_tag.outputs.tag }}" ]; then
-            ALL_COMMITS=$(git log --pretty=format:"- %s (%h)" ${{ steps.prev_tag.outputs.tag }}..HEAD)
+          # Try to extract release notes from CHANGELOG.md
+          RELEASE_NOTES=""
+
+          if [ -f "CHANGELOG.md" ]; then
+            # Extract content for current version from CHANGELOG
+            # Look for version sections like "## v1.2.0 - 2025-12-12"
+            RELEASE_NOTES=$(awk -v version="v$CURRENT_VERSION" '
+              BEGIN { in_section = 0; found = 0 }
+              /^## v[0-9]+\.[0-9]+\.[0-9]+/ {
+                if ($0 ~ "^## " version) {
+                  in_section = 1
+                  found = 1
+                  next
+                } else if (found) {
+                  # Weve reached the next version section
+                  exit
+                }
+                next
+              }
+              in_section && /^## / && !/^## v[0-9]+\.[0-9]+\.[0-9]+/ {
+                # This handles non-version headers within a version section
+                print
+                next
+              }
+              in_section {
+                print
+              }
+            ' CHANGELOG.md)
+          fi
+
+          # If no CHANGELOG content found, generate from commits
+          if [ -z "$RELEASE_NOTES" ]; then
+            echo "No CHANGELOG entry found for version $CURRENT_VERSION. Generating from commits..." >&2
+
+            # Initialize changelog
+            CHANGELOG="## Changes since ${{ steps.prev_tag.outputs.tag }}\n\n"
+
+            # Get commit messages between tags
+            if [ -n "${{ steps.prev_tag.outputs.tag }}" ]; then
+              ALL_COMMITS=$(git log --pretty=format:"- %s (%h)" ${{ steps.prev_tag.outputs.tag }}..HEAD)
+            else
+              ALL_COMMITS=$(git log --pretty=format:"- %s (%h)")
+            fi
+
+            # Filter out commits that shouldn't appear in release notes
+            COMMITS=$(echo "$ALL_COMMITS" | grep -vE "\[skip release\]|\[no release\]|\[skip changelog\]" || true)
+            # Also filter out common minor commit types
+            COMMITS=$(echo "$COMMITS" | grep -vE "^\- (docs|chore|style|refactor)(\(|:)" || true)
+
+            # Categorize commits
+            FEATURES=$(echo "$COMMITS" | grep -iE "^-.*feat|^-.*feature|^-.*add" || true)
+            FIXES=$(echo "$COMMITS" | grep -iE "^-.*fix|^-.*bugfix" || true)
+            CHANGES=$(echo "$COMMITS" | grep -iE "^-.*change|^-.*update|^-.*improve|^-.*perf" || true)
+            OTHER=$(echo "$COMMITS" | grep -ivE "^-.*feat|^-.*feature|^-.*add|^-.*fix|^-.*bugfix|^-.*change|^-.*update|^-.*improve|^-.*perf" || true)
+
+            # Build release notes
+            if [ -n "$FEATURES" ]; then
+              CHANGELOG="${CHANGELOG}### ✨ Features\n${FEATURES}\n\n"
+            fi
+
+            if [ -n "$FIXES" ]; then
+              CHANGELOG="${CHANGELOG}### 🐛 Bug Fixes\n${FIXES}\n\n"
+            fi
+
+            if [ -n "$CHANGES" ]; then
+              CHANGELOG="${CHANGELOG}### 🔧 Changes\n${CHANGES}\n\n"
+            fi
+
+            if [ -n "$OTHER" ]; then
+              CHANGELOG="${CHANGELOG}### 📝 Other\n${OTHER}\n\n"
+            fi
+
+            RELEASE_NOTES="$CHANGELOG"
           else
-            ALL_COMMITS=$(git log --pretty=format:"- %s (%h)")
-          fi
-
-          # Filter out commits that shouldn't appear in release notes
-          COMMITS=$(echo "$ALL_COMMITS" | grep -vE "\[skip release\]|\[no release\]|\[skip changelog\]" || true)
-          # Also filter out common minor commit types
-          COMMITS=$(echo "$COMMITS" | grep -vE "^\- (docs|chore|style|refactor)(\(|:)" || true)
-
-          # Categorize commits
-          FEATURES=$(echo "$COMMITS" | grep -iE "^-.*feat|^-.*feature|^-.*add" || true)
-          FIXES=$(echo "$COMMITS" | grep -iE "^-.*fix|^-.*bugfix" || true)
-          CHANGES=$(echo "$COMMITS" | grep -iE "^-.*change|^-.*update|^-.*improve|^-.*perf" || true)
-          OTHER=$(echo "$COMMITS" | grep -ivE "^-.*feat|^-.*feature|^-.*add|^-.*fix|^-.*bugfix|^-.*change|^-.*update|^-.*improve|^-.*perf" || true)
-
-          # Build release notes
-          if [ -n "$FEATURES" ]; then
-            CHANGELOG="${CHANGELOG}### ✨ Features\n${FEATURES}\n\n"
-          fi
-
-          if [ -n "$FIXES" ]; then
-            CHANGELOG="${CHANGELOG}### 🐛 Bug Fixes\n${FIXES}\n\n"
-          fi
-
-          if [ -n "$CHANGES" ]; then
-            CHANGELOG="${CHANGELOG}### 🔧 Changes\n${CHANGES}\n\n"
-          fi
-
-          if [ -n "$OTHER" ]; then
-            CHANGELOG="${CHANGELOG}### 📝 Other\n${OTHER}\n\n"
+            echo "Found CHANGELOG entry for version $CURRENT_VERSION" >&2
           fi
 
           # Save to file
-          echo -e "$CHANGELOG" > release_notes.md
+          echo -e "$RELEASE_NOTES" > release_notes.md
 
           # Set output for GitHub Release
           {
