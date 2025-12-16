@@ -32,63 +32,66 @@
 </p>
 
 <p>
-  <a href="../README.md">English</a> · <strong>中文</strong>
+  <a href="README.md">English</a> · <a href="docs/README.zh-CN.md">中文</a>
 </p>
 
 </div>
 
----
-
 ## PocketMocker 是什么？
 
-**PocketMocker** 是一款专为前端开发者打造的 **页面内 (In-Page) API Mock 与调试工具**。
+**PocketMocker 是一款用于前端开发的页面内 HTTP 控制器。**
 
-它将一个强大的控制面板直接嵌入到你的浏览器中，让你能在开发过程中实时拦截、Mock 和微调 HTTP 响应。它是连接 API 设计与 UI 实现的桥梁。
+简单来说，它让你在不改后端、不起 Mock Server 的情况下，直接决定接口"返回什么"。
 
----
+它允许您**直接在浏览器页面上**拦截、覆盖和操作 HTTP 响应，无需设置模拟服务器或离开您的开发环境。
 
-## 核心能力：全方位 HTTP 控制
-
-PocketMocker 赋予你对 HTTP 请求的**上帝视角**。不再被动等待后端，你就是网络的主宰。
-
-### 时序控制 (Timing Control)
-*   **网络延迟模拟**：精确设置毫秒级延迟，测试 Loading 状态。
-*   **竞态条件测试**：故意让请求 B 比请求 A 先返回，验证你的代码是否处理了异步竞态问题。
-*   **无限加载**：将延迟设为极大，专心打磨骨架屏（Skeleton）的动画细节。
-
-### 状态强制 (Status Forcing)
-*   **一键报错**：强制接口返回 500、503 或 404，验证错误边界（Error Boundary）和降级 UI。
-*   **权限模拟**：强制返回 401（未授权）或 403（禁止访问），测试登录跳转和权限提示逻辑。
-*   **空状态锁死**：强制返回 204 或空数组，调整“暂无数据”页面的布局。
-
-### 载荷篡改 (Payload Manipulation)
-*   **数据注入**：实时修改响应 JSON，注入超长文本、极端数值或特殊字符，测试 UI 健壮性。
-*   **类型混沌**：本该返回 `number` 的字段返回了 `string`？本该有值的字段返回了 `null`？用 PocketMocker 提前复现这些后端“锅”，确保前端不白屏。
+PocketMocker 将 **Mock 功能** 与 **HTTP 控制能力** 融为一体，让您能通过实时模拟任意网络场景，更快速地构建健壮的 UI。
 
 ---
 
-## 常见调试场景
+## 为什么选择 PocketMocker？
 
-*   ✅ **“无限 Loading”测试**：设置超长延迟，微调加载动画的每一帧。
-*   ✅ **“混沌猴子”测试**：随机切换接口的成功/失败状态，测试应用的容错能力。
-*   ✅ **“海量数据”测试**：利用智能生成语法，一键生成 1000+ 条列表数据，测试长列表滚动的性能。
+### 轻松 Mock
+告别手写临时 Mock 代码。自动拦截 `fetch` 和 `XHR` 请求。使用智能语法生成逼真的数据（姓名、邮箱、日期），或导入现有的 Postman/OpenAPI 文档。
+
+### 完全掌控
+获得对网络层的完全控制权。
+*   **时序控制**：模拟网络延迟或竞态条件。
+*   **状态控制**：强制返回 500 错误、401 未授权或 204 空响应。
+*   **载荷注入**：注入边界数据（null、超长字符串）以测试健壮性。
+
+### 即时调试
+保持心流状态。在嵌入式面板中微调响应，立即看到 UI 更新。无需切换到外部应用，无需重启服务器。
+
+---
+
+## 实际应用场景
+
+### 即时状态切换
+一键切换**成功**、**错误（500/404）**或**空数据**状态。验证您的 UI 如何处理加载动画或错误提示，无需修改任何代码。
+
+### 实时数据调整
+需要测试超长用户名？缺失的头像？或特定的价格格式？直接在面板中编辑响应 JSON，立即看到 UI 更新。
+
+### 边界情况验证
+模拟网络延迟、超时错误或未授权（401）响应，确保您的应用优雅地处理异常情况。
 
 ---
 
 <video src="https://res.oafimg.cn/-/95cf85046b29fba1/pocket-mocker-new.mp4" controls width="800"></video>
 
-## 为什么选择 PocketMocker？
+## 何时使用 PocketMocker？
 
-**什么时候用 Apifox / Postman？**
-*   API 设计与文档撰写
+**使用 Postman 进行：**
+*   API 设计与文档
 *   后端契约测试
-*   团队级 API 生命周期管理
+*   团队级 API 管理
 
-**什么时候用 PocketMocker？**
-*   **极速 UI 开发**：“我现在就需要让这个列表变空。”
-*   **可视化调试**：“为什么我的错误边界（Error Boundary）没有显示？”
-*   **零上下文切换**：留在浏览器里，保持心流状态。
-*   **Git 友好**：像共享组件代码一样，通过配置文件共享 Mock 规则。
+**使用 PocketMocker 进行：**
+*   **快速 UI 开发**："我现在就需要让这个列表为空。"
+*   **可视化调试**："为什么我的错误边界没有显示？"
+*   **零上下文切换**：留在浏览器中，保持心流状态。
+*   **Git 友好**：通过配置文件共享 Mock 规则，就像您的代码一样。
 
 ---
 
@@ -119,7 +122,7 @@ if (process.env.NODE_ENV === 'development') {
 }
 ```
 
-启动项目后，页面右下角会出现 **PocketMock** 浮窗。
+启动项目后，页面右下角会出现 **PocketMocker** 浮窗。
 
 ### 方式二：团队协作模式（Vite 插件）🔥 推荐
 
@@ -158,77 +161,67 @@ export default defineConfig({
 
 ### 智能 Mock 数据生成
 
-PocketMock 内置强大的 **智能 Mock 生成器**，使用简单语法即可生成逼真的测试数据。
+PocketMock 内置强大的智能生成器，使用简单语法即可生成逼真的测试数据。
 
-#### 速查表
-
-| 语法 | 描述 | 示例 |
-|:---|:---|:---|
-| **基础类型** |
-| `@guid` | UUID | `"f47ac-..."` |
-| `@integer(min,max)` | 随机整数 | `@integer(1,100)` → `42` |
-| `@float(min,max,decimals)` | 随机浮点数 | `@float(0,1,2)` → `0.57` |
-| `@boolean` | 随机布尔值 | `true` |
-| `@string(length)` | 随机字符串 | `@string(8)` → `"aX9bK2pQ"` |
-| **个人信息** |
-| `@name` | 随机姓名 | `"张三"` |
-| `@email(domains)` | 随机邮箱 | `@email(gmail.com,yahoo.com)` |
-| `@phone(countryCode)` | 电话号码 | `@phone(+86)` → `+86139********` |
-| **日期时间** |
-| `@date(start,end)` | 随机日期 | `@date(2023-01-01,2024-12-31)` |
-| **媒体资源** |
-| `@image(width,height)` | 占位图片 | `@image(200x200)` |
-| `@color` | 随机颜色 | `"#a3f4c2"` |
-| **文本内容** |
-| `@text(wordCount)` | 随机文本 | `@text(15)` → `"这是一个随机生成的文本..."` |
-| `@pick(A,B,C)` | 随机选择 | `@pick(苹果,香蕉,橙子)` |
-| **地理位置** |
-| `@address(countries)` | 地址对象 | `@address(中国,美国)` |
-| **商业信息** |
-| `@company(industries)` | 公司对象 | `@company(科技,金融)` |
-| `@url(tlds)` | 随机 URL | `@url(com,cn)` → `"https://example.com"` |
-| **数组语法** |
-| 见下方示例 | 数组生成语法 | 使用代码块避免格式冲突 |
-
-**数组语法示例:**
-```javascript
-{
-  "users|3-5": {       // 生成3到5个用户
-    "id": "@guid",
-    "name": "@name"
-  },
-  "scores|10": "@integer(60,100)"  // 生成10个分数的数组
-}
-```
-
-#### 使用示例
+#### 快速体验
 
 ```javascript
 {
-  "code": 0,
-  "data": {
-    "users|5": { // 生成包含 5 个用户的数组
-      "id": "@guid",
-      "name": "@name",
-      "avatar": "@image(100x100)",
-      "role": "@pick(管理员,访客,编辑)",
-      "score": "@integer(60,100)"
-    }
+  "user": {
+    "id": "@guid",                    // → "550e8400-e29b-41d4"
+    "name": "@name",                  // → "张三"
+    "email": "@email",                // → "zhangsan@example.com"
+    "avatar": "@image(100x100)",      // → "https://via.placeholder.com/100x100"
+    "age": "@integer(18,60)",        // → 25
+    "role": "@pick(管理员,用户)"        // → "管理员"
   }
 }
 ```
 
-### 配置导入
+#### 常用生成器
 
-支持直接导入 API 文档，自动转换并生成智能 Mock 数据。
+| 语法 | 功能 | 示例 |
+|------|------|------|
+| `@guid` | 唯一标识 | `"f47ac..."` |
+| `@name` | 随机姓名 | `"张三"` |
+| `@email` | 邮箱地址 | `"user@example.com"` |
+| `@integer(min,max)` | 随机整数 | `@integer(1,100)` → `42` |
+| `@pick(A,B,C)` | 随机选择 | `@pick(苹果,香蕉)` → `"苹果"` |
+| `@image(100x100)` | 占位图片 | `"https://via.placeholder.com/100x100"` |
 
-- **支持格式**: Postman Collection v2.1.0, OpenAPI 3.0 (Swagger)
-- **智能转换**:
-  - `user_id` -> `@guid`
-  - `avatar` -> `@image`
-  - `{{baseUrl}}/users` -> `/users`
+#### 更多功能
 
-**使用方法**: 点击控制台顶部的"导入"按钮，选择 JSON 文件即可。
+<details>
+<summary>📖 查看完整生成器列表</summary>
+
+| 分类 | 语法 | 说明 |
+|------|------|------|
+| **基础类型** |
+| `@float(min,max,decimals)` | 随机浮点数 | `@float(0,1,2)` → `0.57` |
+| `@boolean` | 随机布尔值 | `true` |
+| `@string(length)` | 随机字符串 | `@string(8)` → `"aX9bK2pQ"` |
+| **个人信息** |
+| `@phone(countryCode)` | 电话号码 | `@phone(+86)` |
+| **日期时间** |
+| `@date(start,end)` | 随机日期 | `@date(2023-01-01,2024-12-31)` |
+| **其他** |
+| `@color` | 随机颜色 | `"#a3f4c2"` |
+| `@text(wordCount)` | 随机文本 | 生成指定词数的文本 |
+| `@address(countries)` | 地址对象 | `@address(中国,美国)` |
+| `@company(industries)` | 公司对象 | `@company(科技,金融)` |
+| `@url(tlds)` | 随机 URL | `@url(com,cn)` |
+
+**数组语法：**
+```javascript
+{
+  "users|5": {            // 生成5个用户
+    "id": "@guid",
+    "name": "@name"
+  },
+  "scores|3-5": "@integer(60,100)"  // 生成3到5个分数
+}
+```
+</details>
 
 ### 动态响应（函数 Mock）
 
@@ -254,13 +247,25 @@ PocketMock 内置强大的 **智能 Mock 生成器**，使用简单语法即可�
 }
 ```
 
+### 配置导入
+
+支持直接导入 API 文档，自动转换并生成智能 Mock 数据。
+
+- **支持格式**: Postman Collection v2.1.0, OpenAPI 3.0 (Swagger)
+- **智能转换**:
+  - `user_id` -> `@guid`
+  - `avatar` -> `@image`
+  - `{{baseUrl}}/users` -> `/users`
+
+**使用方法**: 点击控制台顶部的"导入"按钮，选择 JSON 文件即可。
+
 ### 功能全面的网络面板
 
 内置的网络面板将实时记录所有网络请求（包括 Mocked 和真实请求），提供强大的调试功能：
 
-- **查看详情**: 点击日志查看完整的 Request/Response Body
-- **一键 Mock**: 点击日志上的"Mock"按钮，将真实请求直接转换为 Mock 规则
-- **筛选**: 支持按 URL、方法、Mock 状态筛选
+- **查看详情**: 点击日志查看完整的 Request/Response Body。
+- **一键 Mock**: 点击日志上的"Mock"按钮，将真实请求直接转换为 Mock 规则。
+- **筛选**: 支持按 URL、方法、Mock 状态筛选。
 
 ---
 
@@ -274,7 +279,7 @@ PocketMock 内置强大的 **智能 Mock 生成器**，使用简单语法即可�
 
 ## 项目路线图
 
-查看我们的 [项目路线图](ROADMAP.zh-CN.md)，了解 PocketMocker 的未来规划以及如何参与贡献！
+查看我们的 [项目路线图](ROADMAP.md)，了解 PocketMocker 的未来规划以及如何参与贡献！
 
 ---
 
@@ -282,7 +287,7 @@ PocketMock 内置强大的 **智能 Mock 生成器**，使用简单语法即可�
 
 我们欢迎所有对 PocketMocker 的贡献！无论是报告 Bug、提出新功能建议、改进文档还是提交代码，您的帮助都将使 PocketMocker 变得更好。
 
-请阅读我们的 [贡献指南](CONTRIBUTING.zh-CN.md) 了解如何参与项目。
+请阅读我们的 [贡献指南](CONTRIBUTING.md) 了解如何参与项目。
 
 ### 联系我
 
@@ -296,7 +301,7 @@ PocketMock 内置强大的 **智能 Mock 生成器**，使用简单语法即可�
 
 ---
 
-## 开源协议
+## License
 
 MIT © [tianchangNorth](https://github.com/tianchangNorth)
 

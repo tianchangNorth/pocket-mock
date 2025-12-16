@@ -36,45 +36,50 @@
 
 ## What is PocketMocker?
 
-**PocketMocker** is the **In-Page API Mocking & Debugging Tool** built for frontend developers.
+**PocketMocker is an in-page HTTP controller for frontend development.**
 
-It embeds a powerful control panel directly into your browser, allowing you to intercept, mock, and tweak HTTP responses in real-time. It bridges the gap between API design and UI implementation.
+In simple terms, it lets you decide what your API responses should be—without touching the backend or setting up a mock server.
 
----
+It allows you to **intercept**, **override**, and **manipulate** HTTP responses directly on your browser page, without setting up a mock server or leaving your development environment.
 
-## Core Capabilities: Total HTTP Control
-
-PocketMocker gives you **God-mode access** to your HTTP requests. Stop waiting for the backend—you are the master of your network.
-
-### Timing Control
-*   **Latency Simulation**: Set precise millisecond delays to test loading states.
-*   **Race Condition Testing**: Deliberately make request B return before request A to verify if your code handles async race conditions correctly.
-*   **Infinite Loading**: Set a massive delay to focus on polishing your Skeleton screens and loading animations.
-
-### Status Forcing
-*   **Instant Errors**: Force endpoints to return 500, 503, or 404 to verify Error Boundaries and fallback UIs.
-*   **Auth Simulation**: Force return 401 (Unauthorized) or 403 (Forbidden) to test login redirects and permission guards.
-*   **Lock Empty State**: Force return 204 or an empty array to tweak the layout of your "No Data" pages.
-
-### Payload Manipulation
-*   **Data Injection**: Inject extremely long text, boundary values, or special characters in real-time to test UI robustness.
-*   **Type Chaos**: Field expected a `number` but got a `string`? Value expected to be present but is `null`? Reproduce these backend "surprises" instantly to ensure your frontend doesn't crash.
+Combining **Mocking** capabilities with **HTTP Control**, PocketMocker empowers you to build robust UIs faster by simulating any network scenario instantly.
 
 ---
-
-## Common Debugging Scenarios
-
-*   ✅ **The "Infinite Loading" Test**: Set a huge delay to fine-tune every frame of your loading animation.
-*   ✅ **The "Chaos Monkey" Test**: Randomly toggle success/failure states to test app resilience.
-*   ✅ **The "Massive Data" Test**: Use smart generation syntax to create lists with 1000+ items instantly to test virtualization and scrolling performance.
-
----
-
-https://github.com/user-attachments/assets/e7501191-7ef1-4bd4-bd21-6500585fe4ad.mp4
 
 ## Why PocketMocker?
 
-**Use Apifox / Postman for:**
+### Mock Effortlessly
+Stop writing throwaway mock code. Intercept `fetch` and `XHR` requests automatically. Use smart syntax to generate realistic data (names, emails, dates) or import existing Postman/OpenAPI collections.
+
+### Control Completely
+Gain God-mode access to your network layer.
+*   **Timing**: Simulate network latency or race conditions.
+*   **Status**: Force 500 errors, 401 unauth states, or 204 empty responses.
+*   **Payload**: Inject edge-case data (nulls, long strings) to test robustness.
+
+### Debug Instantly
+Stay in the flow. Tweak responses in the embedded panel and see your UI update immediately. No context switching to external apps, no restarting servers.
+
+---
+
+## Real-World Use Cases
+
+### Instant State Switching
+Toggle between **Success**, **Error (500/404)**, or **Empty Data** states in one click. verify how your UI handles loading spinners or error toasts without changing a single line of code.
+
+### On-the-fly Data Tweaking
+Need to test a long username? A missing avatar? Or a specific price format? Just edit the response JSON directly in the panel and see the UI update instantly.
+
+### Edge Case Verification
+Simulate network delays (latency), timeout errors, or unauthorized (401) responses to ensure your application handles exceptions gracefully.
+
+---
+
+https://github.com/user-attachments/assets/e7501191-ef1-4bd4-bd21-6500585fe4ad.mp4
+
+## When to use PocketMocker?
+
+**Use Postman for:**
 *   API Design & Documentation
 *   Backend Contract Testing
 *   Team-level API Management
@@ -155,75 +160,65 @@ Run `npm run dev`. PocketMock automatically detects the plugin environment and s
 
 PocketMock includes a powerful **Smart Mock Generator** that allows you to create realistic test data with simple template syntax.
 
-#### Cheat Sheet
-
-| Syntax | Description | Example |
-|:---|:---|:---|
-| **Basic** |
-| `@guid` | UUID | `"f47ac-..."` |
-| `@integer(min,max)` | Random Integer | `@integer(1,100)` → `42` |
-| `@float(min,max,decimals)` | Random Float | `@float(0,1,2)` → `0.57` |
-| `@boolean` | Random Boolean | `true` |
-| `@string(length)` | Random String | `@string(8)` → `"aX9bK2pQ"` |
-| **Personal** |
-| `@name` | Random Name | `"John"` |
-| `@email(domains)` | Random Email | `@email(gmail.com,yahoo.com)` |
-| `phone(countryCode)` | Phone Number | `@phone(+1)` → `+1234567890` |
-| **Date/Time** |
-| `@date(start,end)` | Random Date | `@date(2023-01-01,2024-12-31)` |
-| **Media** |
-| `@image(width,height)` | Placeholder Image | `@image(200x200)` |
-| `@color` | Random Color | `"#a3f4c2"` |
-| **Text** |
-| `@text(wordCount)` | Random Text | `@text(15)` → `"The quick brown fox..."` |
-| `@pick(A,B,C)` | Random Pick | `@pick(apple,banana,orange)` |
-| **Location** |
-| `@address(countries)` | Address Object | `@address(US,UK)` |
-| **Business** |
-| `@company(industries)` | Company Object | `@company(Tech,Finance)` |
-| `@url(tlds)` | Random URL | `@url(com,io)` → `"https://example.com"` |
-| **Array** |
-| See examples below | Array generation syntax | Use code blocks to avoid format conflicts |
-
-**Array Syntax Examples:**
-```javascript
-{
-  "users|3-5": {       // 3 to 5 users
-    "id": "@guid",
-    "name": "@name"
-  },
-  "scores|10": "@integer(60,100)"  // Array of 10 scores
-}
-```
-
-#### Usage Example
+#### Quick Example
 
 ```javascript
 {
-  "code": 0,
-  "data": {
-    "users|5": { // Generate array with 5 users
-      "id": "@guid",
-      "name": "@name",
-      "avatar": "@image(100x100)",
-      "role": "@pick(admin,guest,editor)",
-      "score": "@integer(60,100)"
-    }
+  "user": {
+    "id": "@guid",                    // → "550e8400-e29b-41d4-a716-446655440000"
+    "name": "@name",                  // → "John"
+    "email": "@email",                // → "john.smith@example.com"
+    "avatar": "@image(100x100)",      // → "https://via.placeholder.com/100x100"
+    "age": "@integer(18,60)",        // → 25
+    "role": "@pick(admin,user)"      // → "admin"
   }
 }
 ```
 
-### Config Import
+#### Common Generators
 
-Import mock rules directly from popular API documentation formats with auto-conversion.
+| Syntax | Function | Example |
+|--------|----------|---------|
+| `@guid` | Unique ID | `"f47ac..."` |
+| `@name` | Random Name | `"John"` |
+| `@email` | Email Address | `"user@example.com"` |
+| `@integer(min,max)` | Random Integer | `@integer(1,100)` → `42` |
+| `@pick(A,B,C)` | Random Choice | `@pick(apple,banana)` → `"apple"` |
+| `@image(100x100)` | Placeholder Image | `"https://via.placeholder.com/100x100"` |
 
-- **Supported Formats**: Postman Collection v2.1.0, OpenAPI 3.0 (Swagger)
-- **Smart Conversion**:
-  - `user_id` -> `@guid`
-  - `avatar` -> `@image`
-  - `{{baseUrl}}/users` -> `/users`
+#### More Features
 
-**How to use**: Click the "Import" button in the dashboard header and select your JSON file.
+<details>
+<summary>📖 View Complete Generator List</summary>
+
+| Category | Syntax | Description |
+|----------|--------|-------------|
+| **Basic Types** |
+| `@float(min,max,decimals)` | Random Float | `@float(0,1,2)` → `0.57` |
+| `@boolean` | Random Boolean | `true` |
+| `@string(length)` | Random String | `@string(8)` → `"aX9bK2pQ"` |
+| **Personal** |
+| `@phone(countryCode)` | Phone Number | `@phone(+1)` |
+| **Date/Time** |
+| `@date(start,end)` | Random Date | `@date(2023-01-01,2024-12-31)` |
+| **Other** |
+| `@color` | Random Color | `"#a3f4c2"` |
+| `@text(wordCount)` | Random Text | Generate text with specified word count |
+| `@address(countries)` | Address Object | `@address(US,UK)` |
+| `@company(industries)` | Company Object | `@company(Tech,Finance)` |
+| `@url(tlds)` | Random URL | `@url(com,io)` |
+
+**Array Syntax:**
+```javascript
+{
+  "users|5": {            // Generate 5 users
+    "id": "@guid",
+    "name": "@name"
+  },
+  "scores|3-5": "@integer(60,100)"  // Generate 3 to 5 scores
+}
+```
+</details>
 
 ### Dynamic Response (Function Mock)
 
@@ -248,6 +243,18 @@ You are not limited to static JSON. You can write JavaScript functions to genera
   return { id: 2, name: 'Guest' };
 }
 ```
+
+### Config Import
+
+Import mock rules directly from popular API documentation formats with auto-conversion.
+
+- **Supported Formats**: Postman Collection v2.1.0, OpenAPI 3.0 (Swagger)
+- **Smart Conversion**:
+  - `user_id` -> `@guid`
+  - `avatar` -> `@image`
+  - `{{baseUrl}}/users` -> `/users`
+
+**How to use**: Click the "Import" button in the dashboard header and select your JSON file.
 
 ### Comprehensive Network Panel
 
