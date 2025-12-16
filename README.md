@@ -70,7 +70,7 @@ Need to test a long username? A missing avatar? Or a specific price format? Just
 ### Edge Case Verification
 Simulate network delays (latency), timeout errors, or unauthorized (401) responses to ensure your application handles exceptions gracefully.
 
-https://github.com/user-attachments/assets/e7501191-7ef1-4bd4-bd21-6500585fe4ad.mp4
+<video src="https://res.oafimg.cn/-/95cf85046b29fba1/pocket-mocker-new.mp4" controls width="800"></video>
 ---
 
 ## Installation
