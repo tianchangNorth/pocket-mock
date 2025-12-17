@@ -7,9 +7,9 @@
 - **Network Logging**: Fixed mock request logging to properly capture and display request headers and payload
 - **Headers Display**: Resolved issue where request headers showed as `[object Headers]` instead of formatted JSON
 - **Response Body Formatting**: Fixed response body formatting issues including double-serialized JSON data
-- **Payload Logging**: Mock requests now properly display request payload information instead of showing `(Empty)`
-
 ### Improvements
+
+- **UI**: Ensure draggable panel always stays within viewport bounds upon expansion, making controls accessible.
 
 - **Data Formatting**: Added dedicated `formatResponseBody()` function for consistent response body display
 
