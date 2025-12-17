@@ -22,10 +22,14 @@
   <a href="#installation">Installation</a>
   ·
   <a href="#quick-start">Quick Start</a>
-  .
+  ·
   <a href="#contributing--contact">Contributing & Contact</a>
   ·
-  <a href="https://github.com/tianchangNorth/pocket-mocker/discussions"> Discussions</a>
+  <a href="https://github.com/tianchangNorth/pocket-mocker/discussions">Discussions</a>
+  ·
+  <a href="https://discord.gg/cjGqnppNZW" target="_blank">
+    <strong>💬 Discord</strong>
+  </a>
 </p>
 
 <p>

@@ -26,6 +26,10 @@
   <a href="#贡献与联系">贡献与联系</a>
   ·
   <a href="https://github.com/tianchangNorth/pocket-mocker/discussions">讨论</a>
+  ·
+  <a href="https://discord.gg/cjGqnppNZW" target="_blank">
+    <strong>💬 Discord</strong>
+  </a>
 </p>
 
 <p>
