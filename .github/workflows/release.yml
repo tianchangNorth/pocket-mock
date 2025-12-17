@@ -1,0 +1,237 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
+
+      - name: Get version from tag
+        id: get_version
+        run: |
+          TAG_VERSION=${{ github.ref_name }}
+          VERSION=${TAG_VERSION#v}
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "tag=${TAG_VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Validate tag is semver-like
+        run: |
+          TAG=${{ steps.get_version.outputs.tag }}
+          if ! echo "$TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Tag must look like vX.Y.Z, got: $TAG"
+            exit 1
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Check
+        run: npm run check
+
+      - name: Build project
+        run: npm run build
+
+      - name: Read package info
+        id: pkg
+        run: |
+          NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+          echo "name=$NAME" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Validate package version matches tag
+        run: |
+          TAG_VERSION="${{ steps.get_version.outputs.version }}"
+          PKG_VERSION="${{ steps.pkg.outputs.version }}"
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "Tag version ($TAG_VERSION) does not match package.json version ($PKG_VERSION)."
+            echo "Update package.json version before tagging, or the publish/release will be inconsistent."
+            exit 1
+          fi
+
+      - name: Pack
+        id: pack
+        run: |
+          TARBALL=$(npm pack --silent)
+          echo "tarball=$TARBALL" >> $GITHUB_OUTPUT
+
+      - name: Publish to NPM
+        id: publish
+        run: |
+          set -o pipefail
+          npm publish "${{ steps.pack.outputs.tarball }}" --access public 2>&1 | tee npm-publish.log
+        continue-on-error: true
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Ensure publish succeeded
+        run: |
+          if [ "${{ steps.publish.outcome }}" = "success" ]; then
+            exit 0
+          fi
+
+          if [ -f npm-publish.log ] && grep -q "npm error code EOTP" npm-publish.log; then
+            echo "npm publish failed with EOTP (2FA OTP required)."
+            echo "Fix: create an npm Automation Token (recommended for CI) and store it in GitHub Secrets as NPM_TOKEN."
+            echo "Automation Tokens can publish without interactive OTP; classic tokens with publish 2FA will fail in CI."
+            exit 1
+          fi
+
+          echo "npm publish failed. See npm-publish.log for details."
+          tail -n 50 npm-publish.log || true
+          exit 1
+
+      - name: Get previous tag
+        id: prev_tag
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          echo "tag=$PREV_TAG" >> $GITHUB_OUTPUT
+          echo "Previous tag: $PREV_TAG"
+
+      - name: Generate Release Notes
+        id: release_notes
+        run: |
+          CURRENT_VERSION=${{ steps.get_version.outputs.version }}
+          RELEASE_NOTES=""
+
+          if [ -f "CHANGELOG.md" ]; then
+            echo "Extracting release notes from CHANGELOG.md..."
+            RELEASE_NOTES=$(awk -v version="v$CURRENT_VERSION" '
+              BEGIN { in_section = 0; found = 0 }
+              /^## v[0-9]+\.[0-9]+\.[0-9]+/ {
+                if ($0 ~ "^## " version) {
+                  in_section = 1
+                  found = 1
+                  next
+                } else if (found) {
+                  exit
+                }
+                next
+              }
+              in_section && /^## / && !/^## v[0-9]+\.[0-9]+\.[0-9]+/ {
+                print
+                next
+              }
+              in_section {
+                print
+              }
+            ' CHANGELOG.md)
+          fi
+
+          if [ -z "$RELEASE_NOTES" ]; then
+            echo "No CHANGELOG entry found. Generating from commits..."
+            
+            CHANGELOG="## Changes"
+            if [ -n "${{ steps.prev_tag.outputs.tag }}" ]; then
+              CHANGELOG="${CHANGELOG} since ${{ steps.prev_tag.outputs.tag }}"
+              ALL_COMMITS=$(git log --pretty=format:"- %s (%h)" ${{ steps.prev_tag.outputs.tag }}..HEAD)
+            else
+              CHANGELOG="${CHANGELOG}"
+              ALL_COMMITS=$(git log --pretty=format:"- %s (%h)")
+            fi
+            CHANGELOG="${CHANGELOG}\n\n"
+
+            COMMITS=$(echo "$ALL_COMMITS" | grep -vE "\[skip release\]|\[no release\]|\[skip changelog\]|\[skip ci\]" || true)
+            COMMITS=$(echo "$COMMITS" | grep -vE "^\- (docs|chore|style|refactor)(\(|:)" || true)
+
+            FEATURES=$(echo "$COMMITS" | grep -iE "^-.*feat|^-.*feature|^-.*add" || true)
+            FIXES=$(echo "$COMMITS" | grep -iE "^-.*fix|^-.*bugfix" || true)
+            CHANGES=$(echo "$COMMITS" | grep -iE "^-.*change|^-.*update|^-.*improve|^-.*perf" || true)
+            OTHER=$(echo "$COMMITS" | grep -ivE "^-.*feat|^-.*feature|^-.*add|^-.*fix|^-.*bugfix|^-.*change|^-.*update|^-.*improve|^-.*perf" || true)
+
+            if [ -n "$FEATURES" ]; then
+              CHANGELOG="${CHANGELOG}### ✨ Features\n${FEATURES}\n\n"
+            fi
+
+            if [ -n "$FIXES" ]; then
+              CHANGELOG="${CHANGELOG}### 🐛 Bug Fixes\n${FIXES}\n\n"
+            fi
+
+            if [ -n "$CHANGES" ]; then
+              CHANGELOG="${CHANGELOG}### 🔧 Changes\n${CHANGES}\n\n"
+            fi
+
+            if [ -n "$OTHER" ] && [ -n "$(echo "$OTHER" | grep -v '^$')" ]; then
+              CHANGELOG="${CHANGELOG}### 📝 Other\n${OTHER}\n\n"
+            fi
+
+            RELEASE_NOTES="$CHANGELOG"
+          else
+            echo "Found CHANGELOG entry for version v$CURRENT_VERSION"
+          fi
+
+          PACKAGE_NAME=$(node -p "require('./package.json').name")
+          NPM_LINK="\n\n---\n\n📦 **NPM Package**: [${PACKAGE_NAME}@${CURRENT_VERSION}](https://www.npmjs.com/package/${PACKAGE_NAME}/v/${CURRENT_VERSION})"
+          RELEASE_NOTES="${RELEASE_NOTES}${NPM_LINK}"
+
+          echo -e "$RELEASE_NOTES" > release_notes.md
+
+          {
+            echo "notes<<EOF"
+            cat release_notes.md
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        run: |
+          TAG=${{ steps.get_version.outputs.tag }}
+          gh release create "$TAG" \
+            --title "Release $TAG" \
+            --notes-file release_notes.md
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Notify Telegram
+        if: always()
+        run: |
+          TAG=${{ steps.get_version.outputs.tag }}
+          STATUS="${{ job.status }}"
+          PACKAGE="${{ steps.pkg.outputs.name }}@${{ steps.pkg.outputs.version }}"
+          PUBLISH_OUTCOME="${{ steps.publish.outcome }}"
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          if [ "$STATUS" = "success" ]; then
+            PREFIX="✅"
+          else
+            PREFIX="❌"
+          fi
+          TEXT=$(printf "%s NPM Release: %s\n\nRepo: %s\nTag: %s\nPackage: %s\nPublish: %s\nRun: %s\n" \
+            "$PREFIX" \
+            "$STATUS" \
+            "${{ github.repository }}" \
+            "$TAG" \
+            "$PACKAGE" \
+            "$PUBLISH_OUTCOME" \
+            "$RUN_URL")
+          curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=${TEXT}" \
+            -d "disable_web_page_preview=true"
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
