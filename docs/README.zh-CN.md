@@ -180,7 +180,7 @@ PocketMock 内置强大的智能生成器，使用简单语法即可生成逼真
 
 ```javascript
 {
-  "user": {
+  "user": {                            // → 生成 10 个用户
     "id": "@guid",                    // → "550e8400-e29b-41d4"
     "name": "@name",                  // → "张三"
     "email": "@email",                // → "zhangsan@example.com"
