@@ -45,7 +45,10 @@ const generators: Record<string, MockGenerator> = {
       return generateUsername();
     }
   },
-
+ 
+  // IP generator for v4 and v6
+  // Arguments: version
+  // Example: @ip(v6) or @ip(IPv6) for IPv6, defaults to IPv4
   ip:(args?:string)=>{
     if(args == "6" || args =="IPv6" || args == "ipv6" || args == "v6"){
       return faker.internet.ipv6();
