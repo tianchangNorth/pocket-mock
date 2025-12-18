@@ -1,4 +1,7 @@
 import type { MockGenerator } from '../types'
+import { generateUsername } from 'unique-username-generator';
+import { faker } from '@faker-js/faker';
+
 
 const generators: Record<string, MockGenerator> = {
 
@@ -15,6 +18,44 @@ const generators: Record<string, MockGenerator> = {
     const min = parseInt(minStr, 10);
     const max = parseInt(maxStr, 10);
     return Math.floor(Math.random() * (max - min + 1)) + min;
+  },
+  // Username generator using unique-username-generator
+  // Arguments: separator, randomDigits, maxLength, dictType
+  // Example: @username("-", 2, 20) or @username() for defaults
+  username: (args?: string) => {
+    if (!args) {
+      return generateUsername();
+    }
+
+    const params = args.split(',').map(s => s.trim().replace(/^["']|["']$/g, ''));
+    const separator = params[0] || '';
+    const randomDigits = params[1] ? parseInt(params[1], 10) : 0;
+    const maxLength = params[2] ? parseInt(params[2], 10) : undefined;
+    const dictType = params[3] || undefined;
+
+    if (dictType) {
+      return generateUsername(separator, randomDigits, maxLength, dictType);
+    } else if (maxLength) {
+      return generateUsername(separator, randomDigits, maxLength);
+    } else if (randomDigits) {
+      return generateUsername(separator, randomDigits);
+    } else if (separator) {
+      return generateUsername(separator);
+    } else {
+      return generateUsername();
+    }
+  },
+ 
+  // IP generator for v4 and v6
+  // Arguments: version
+  // Example: @ip(v6) or @ip(IPv6) for IPv6, defaults to IPv4
+  ip:(args?:string)=>{
+    if(args == "6" || args =="IPv6" || args == "ipv6" || args == "v6"){
+      return faker.internet.ipv6();
+    }else{
+      // Default to IPv4
+      return faker.internet.ipv4();
+    }
   },
 
   string: (args?: string) => {
