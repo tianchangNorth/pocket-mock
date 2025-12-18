@@ -74,9 +74,6 @@
 ### 边界情况验证
 模拟网络延迟、超时错误或未授权（401）响应，确保您的应用优雅地处理异常情况。
 
-
-<video src="https://res.oafimg.cn/-/95cf85046b29fba1/pocket-mocker-new.mp4" controls width="800"></video>
-
 ---
 
 ## 安装
