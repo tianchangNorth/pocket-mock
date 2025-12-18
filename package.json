@@ -76,6 +76,8 @@
     "vite": "npm:rolldown-vite@7.2.5"
   },
   "dependencies": {
-    "axios": "^1.13.2"
+    "@faker-js/faker": "^10.1.0",
+    "axios": "^1.13.2",
+    "unique-username-generator": "^1.5.1"
   }
 }
