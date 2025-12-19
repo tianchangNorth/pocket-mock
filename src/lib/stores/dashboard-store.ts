@@ -1,11 +1,12 @@
 import { writable } from 'svelte/store';
+import { saveUIState, loadUIState } from '@/core/utils/local';
 
 export type ActiveTab = 'rules' | 'network';
 export type RuleTab = 'body' | 'headers';
 export type NetworkDetailTab = 'headers' | 'payload' | 'response';
 
 export const uiState = (() => {
-  const { subscribe, update, set } = writable({
+  const defaultState = {
     minimized: true,
     activeMainTab: 'rules' as ActiveTab,
 
@@ -21,6 +22,19 @@ export const uiState = (() => {
     networkTypeFilter: 'all' as 'all' | 'mock' | 'real',
     expandedLogId: null as string | null,
     activeLogDetailTab: 'response' as NetworkDetailTab
+  };
+
+  const storedState = loadUIState('dashboard', {});
+  const initialState = { ...defaultState, ...storedState };
+
+  initialState.editingRuleId = null;
+  initialState.showAddRulePanel = false;
+  initialState.expandedLogId = null;
+
+  const { subscribe, update, set } = writable(initialState);
+
+  subscribe((state) => {
+    saveUIState('dashboard', state);
   });
 
   return {

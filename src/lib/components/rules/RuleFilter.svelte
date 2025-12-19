@@ -4,9 +4,9 @@
   import Input from '@/lib/ui/Input.svelte';
   import Select from '@/lib/ui/Select.svelte';
 
-  let filterText = "";
-  let methodFilter = "ALL";
-  let statusFilter = "ALL";
+  let filterText = $uiState.ruleFilterText;
+  let methodFilter = $uiState.ruleMethodFilter;
+  let statusFilter = $uiState.ruleStatusFilter;
   
   const METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"];
 

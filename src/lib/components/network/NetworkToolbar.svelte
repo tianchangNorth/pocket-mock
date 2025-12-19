@@ -5,8 +5,8 @@
   import Input from '@/lib/ui/Input.svelte';
   import Select from '@/lib/ui/Select.svelte';
 
-  let filterText = "";
-  let typeFilter = 'all';
+  let filterText = $uiState.networkFilterText;
+  let typeFilter = $uiState.networkTypeFilter;
 
   $: {
     uiState.setNetworkFilters(filterText, typeFilter as any);
