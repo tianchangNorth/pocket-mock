@@ -1,6 +1,5 @@
 import { appReady } from '@/store/store';
-import { requestLogs } from '@/store/log-store';
-import { formatRequestPayload, formatHeaders, formatResponseBody, parseBodyData } from '../utils/http';
+import { parseBodyData } from '../utils/http';
 import { findMatchingRule, resolveMockResponse, logMockRequest } from '../engine/handler';
 
 export function patchFetch() {
@@ -29,11 +28,11 @@ export function patchFetch() {
       const result = await resolveMockResponse(rule, match.params, url, method, requestHeaders, bodyData);
 
       if (result.response instanceof Response) {
-        logMockRequest(method, url, result.response.status, startTime, requestHeaders, '[Response Object]', bodyData);
+        logMockRequest(method, url, result.response.status, true, startTime, requestHeaders, '[Response Object]', bodyData);
         return result.response;
       }
 
-      logMockRequest(method, url, result.status, startTime, requestHeaders, result.response, bodyData);
+      logMockRequest(method, url, result.status, true, startTime, requestHeaders, result.response, bodyData);
 
       return new Response(
         typeof result.response === 'string' ? result.response : JSON.stringify(result.response),
@@ -50,7 +49,6 @@ export function patchFetch() {
     const promise = originalFetch(input, init);
 
     promise.then(async (response) => {
-      const duration = Math.round(performance.now() - startTime);
       let responseBody = '';
       try {
         const clone = response.clone();
@@ -63,30 +61,9 @@ export function patchFetch() {
       } catch (e) {
         responseBody = '[Error reading body]';
       }
-
-      requestLogs.add({
-        method,
-        url,
-        status: response.status,
-        timestamp: Date.now(),
-        duration,
-        isMock: false,
-        responseBody: formatResponseBody(responseBody),
-        requestPayload: formatRequestPayload(bodyData),
-        requestHeaders: formatHeaders(requestHeaders)
-      });
+      logMockRequest(method, url, response.status, false, startTime, requestHeaders, responseBody, bodyData);
     }).catch(() => {
-      requestLogs.add({
-        method,
-        url,
-        status: 0,
-        timestamp: Date.now(),
-        duration: Math.round(performance.now() - startTime),
-        isMock: false,
-        responseBody: '[Network Error]',
-        requestPayload: formatRequestPayload(bodyData),
-        requestHeaders: formatHeaders(requestHeaders)
-      });
+      logMockRequest(method, url, 0, false, startTime, requestHeaders, '[Network Error]', bodyData);
     });
 
     return promise;

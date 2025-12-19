@@ -1,6 +1,5 @@
 import { appReady } from '@/store/store';
-import { requestLogs } from '@/store/log-store';
-import { formatRequestPayload, formatHeaders, formatResponseBody, parseBodyData } from '../utils/http';
+import { parseBodyData } from '../utils/http';
 import { findMatchingRule, resolveMockResponse, logMockRequest } from '../engine/handler';
 
 export function patchXHR() {
@@ -82,7 +81,7 @@ export function patchXHR() {
               return foundKey ? result.headers[foundKey] : null;
             };
 
-            logMockRequest(this._method, this._url, result.status, this._startTime, this._requestHeaders, responseData, this._requestBody);
+            logMockRequest(this._method, this._url, result.status, true, this._startTime, this._requestHeaders, responseData, this._requestBody);
 
             setTimeout(() => {
               this.dispatchEvent(new ProgressEvent('loadstart'));
@@ -110,7 +109,6 @@ export function patchXHR() {
           }
 
           this.addEventListener('loadend', () => {
-            const duration = Math.round(performance.now() - this._startTime);
             let responseBody = '';
             try {
               if (!this.responseType || this.responseType === 'text') {
@@ -123,32 +121,11 @@ export function patchXHR() {
             } catch (e) {
               responseBody = '[Error reading body]';
             }
-
-            requestLogs.add({
-              method: this._method,
-              url: this._url,
-              status: this.status,
-              timestamp: Date.now(),
-              duration,
-              isMock: false,
-              responseBody: formatResponseBody(responseBody),
-              requestPayload: formatRequestPayload(this._requestBody),
-              requestHeaders: formatHeaders(this._requestHeaders)
-            });
+            logMockRequest(this._method, this._url, this.status, false, this._startTime, this._requestHeaders, responseBody, this._requestBody);
           });
 
           this.addEventListener('error', () => {
-            requestLogs.add({
-              method: this._method,
-              url: this._url,
-              status: this.status || 0,
-              timestamp: Date.now(),
-              duration: Math.round(performance.now() - this._startTime),
-              isMock: false,
-              responseBody: '[Network Error]',
-              requestPayload: formatRequestPayload(this._requestBody),
-              requestHeaders: formatHeaders(this._requestHeaders)
-            });
+            logMockRequest(this._method, this._url, this.status, false, this._startTime, this._requestHeaders, '[Network Error]', this._requestBody);
           });
 
           super.send(body);

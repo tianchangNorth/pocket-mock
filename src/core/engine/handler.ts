@@ -3,7 +3,7 @@ import { generateMockData } from './smart-mock';
 import { createMockRequest } from './mock-request';
 import { getActiveRules } from '../manager/rule-manager';
 import { requestLogs } from '@/store/log-store';
-import { formatHeaders, formatRequestPayload, formatResponseBody } from '../utils/http';
+import { formatJSON } from '../utils/http';
 
 import type { MockRule } from '../types';
 
@@ -97,6 +97,7 @@ export function logMockRequest(
   method: string,
   url: string,
   status: number,
+  isMock: boolean,
   startTime: number,
   requestHeaders?: any,
   responseBody?: any,
@@ -109,9 +110,9 @@ export function logMockRequest(
     status,
     timestamp: Date.now(),
     duration,
-    isMock: true,
-    requestHeaders: formatHeaders(requestHeaders),
-    requestPayload: formatRequestPayload(requestPayload),
-    responseBody: formatResponseBody(responseBody)
+    isMock,
+    requestHeaders: formatJSON(requestHeaders),
+    requestPayload: formatJSON(requestPayload),
+    responseBody: formatJSON(responseBody)
   });
 }

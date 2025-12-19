@@ -1,49 +1,20 @@
-export function formatRequestPayload(bodyData: any): string | undefined {
-  if (!bodyData) return undefined;
+export function formatJSON(response: any): string | undefined {
+  if (!response) return undefined;
 
-  if (typeof bodyData === 'string') {
+  if (typeof response === 'string') {
     try {
-      JSON.parse(bodyData);
-      return bodyData;
-    } catch {
-      return bodyData;
-    }
-  }
-
-  return JSON.stringify(bodyData, null, 2);
-}
-
-export function formatHeaders(headers: Headers | Record<string, string> | null | undefined): string | undefined {
-  if (!headers) return undefined;
-
-  if (headers instanceof Headers) {
-    const headersObj: Record<string, string> = {};
-    for (const [key, value] of headers.entries()) {
-      headersObj[key] = value;
-    }
-    return JSON.stringify(headersObj, null, 2);
-  }
-
-  return JSON.stringify(headers, null, 2);
-}
-
-export function formatResponseBody(responseBody: any): string | undefined {
-  if (!responseBody) return undefined;
-
-  if (typeof responseBody === 'string') {
-    try {
-      const parsed = JSON.parse(responseBody);
+      const parsed = JSON.parse(response);
       return JSON.stringify(parsed, null, 2);
     } catch {
-      return responseBody;
+      return response;
     }
-  } else if (typeof responseBody === 'object') {
-    return JSON.stringify(responseBody, null, 2);
-  } else if (typeof responseBody === 'number' || typeof responseBody === 'boolean') {
-    return String(responseBody);
+  } else if (typeof response === 'object') {
+    return JSON.stringify(response, null, 2);
+  } else if (typeof response === 'number' || typeof response === 'boolean') {
+    return String(response);
   }
 
-  return responseBody;
+  return response;
 }
 
 export function parseBodyData(bodyData: any): any {
