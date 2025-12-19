@@ -135,6 +135,7 @@
         value={editContent}
         on:change={(e) => (editContent = e.detail)}
         height="100%"
+        lang="javascript"
       />
     {:else}
       <JsonEditor

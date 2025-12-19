@@ -1,53 +1,72 @@
 <script lang="ts">
   import type { NetworkDetailTab } from '@/lib/stores/dashboard-store';
+  import JsonEditor from '@/lib/ui/JsonEditor.svelte';
   
   export let log: any;
   export let activeTab: NetworkDetailTab = 'response';
   export let onTabChange: (tab: NetworkDetailTab) => void;
+
+  function formatJson(str: any): string {
+    if (!str) return '';
+    try {
+      if (typeof str === 'string') {
+        const obj = JSON.parse(str);
+        return JSON.stringify(obj, null, 2);
+      }
+      return JSON.stringify(str, null, 2);
+    } catch (e) {
+      return String(str);
+    }
+  }
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 <div class="log-details" on:click|stopPropagation>
-  <div class="detail-tabs">
-    <button
-      class="tab-button"
-      class:active={activeTab === 'headers'}
-      on:click|stopPropagation={() => onTabChange('headers')}
-    >
-      Headers
-    </button>
-    <button
-      class="tab-button"
-      class:active={activeTab === 'payload'}
-      on:click|stopPropagation={() => onTabChange('payload')}
-    >
-      Payload
-    </button>
-    <button
-      class="tab-button"
-      class:active={activeTab === 'response'}
-      on:click|stopPropagation={() => onTabChange('response')}
-    >
-      Response
-    </button>
+  <div class="detail-header">
+    <div class="detail-tabs">
+      <button
+        class="tab-button"
+        class:active={activeTab === 'headers'}
+        on:click|stopPropagation={() => onTabChange('headers')}
+      >
+        Headers
+      </button>
+      <button
+        class="tab-button"
+        class:active={activeTab === 'payload'}
+        on:click|stopPropagation={() => onTabChange('payload')}
+      >
+        Payload
+      </button>
+      <button
+        class="tab-button"
+        class:active={activeTab === 'response'}
+        on:click|stopPropagation={() => onTabChange('response')}
+      >
+        Response
+      </button>
+    </div>
   </div>
 
   <div class="detail-content">
     {#if activeTab === 'headers'}
       <div class="detail-section">
-        <div class="detail-label">Request Headers:</div>
-        <pre class="detail-body">{log.requestHeaders || '(Empty)'}</pre>
+        <div class="editor-wrapper">
+          <JsonEditor value={formatJson(log.requestHeaders)} readonly={true} height="auto" maxHeight="400px" lineNumbers={false} />
+        </div>
       </div>
     {:else if activeTab === 'payload'}
       <div class="detail-section">
-        <div class="detail-label">Request Payload:</div>
-        <pre class="detail-body">{log.requestPayload || '(Empty)'}</pre>
+        <div class="editor-wrapper">
+          <JsonEditor value={formatJson(log.requestPayload)} readonly={true} height="auto" maxHeight="400px" lineNumbers={false} />
+        </div>
       </div>
     {:else if activeTab === 'response'}
       <div class="detail-section">
-        <div class="detail-label">Response Body:</div>
-        <pre class="detail-body">{log.responseBody || '(Empty)'}</pre>
+        <div class="editor-wrapper">
+          <JsonEditor value={formatJson(log.responseBody)} readonly={true} height="auto" maxHeight="400px" lineNumbers={false} />
+        </div>
       </div>
     {/if}
   </div>
@@ -55,92 +74,90 @@
 
 <style>
   .log-details {
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1px solid var(--pm-border);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
     cursor: auto;
+    background-color: var(--pm-bg);
+    border-top: 1px solid var(--pm-border);
+  }
+
+  .detail-header {
+    border-bottom: 1px solid var(--pm-border);
+    padding: 0 12px;
+    background-color: var(--pm-bg-secondary);
   }
 
   .detail-tabs {
     display: flex;
-    gap: 2px;
-    margin-bottom: 8px;
+    gap: 16px;
   }
 
   .tab-button {
     background: transparent;
     border: none;
     color: var(--pm-text-secondary);
-    padding: 6px 12px;
-    font-size: 11px;
+    padding: 10px 4px;
+    font-size: 12px;
     cursor: pointer;
-    border-radius: 4px 4px 0 0;
-    transition: all 0.2s;
     font-weight: 500;
+    position: relative;
+    transition: color 0.2s ease;
   }
 
   .tab-button:hover {
     color: var(--pm-text-primary);
-    background: var(--pm-hover-bg);
   }
 
   .tab-button.active {
     color: var(--pm-primary);
-    background: var(--pm-input-bg);
-    border-bottom: 2px solid var(--pm-primary);
+  }
+
+  .tab-button.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: var(--pm-primary);
+    border-radius: 2px 2px 0 0;
   }
 
   .detail-content {
-    background: var(--pm-input-bg);
-    border-radius: 0 4px 4px 4px;
-    padding: 8px;
+    flex: 1;
+    overflow: hidden;
+    position: relative;
   }
 
   .detail-section {
-    min-height: 40px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
   }
 
-  .detail-label {
-    font-size: 10px;
-    color: var(--pm-text-secondary);
-    margin-bottom: 4px;
-    font-weight: bold;
-  }
-
-  .detail-body {
-    font-family: 'Menlo', 'Monaco', monospace;
-    font-size: 11px;
-    color: var(--pm-text-primary);
-    padding: 0;
+  .editor-wrapper {
+    flex: 1;
+    overflow: hidden;
+    /* Remove border to blend in */
+    border: none;
     border-radius: 0;
-    overflow-x: auto;
-    white-space: pre-wrap;
-    max-height: 200px;
-    margin: 0;
+  }
+
+  /* Override JsonEditor container styles to remove borders/radius if needed for seamless look */
+  :global(.log-details .json-editor-container) {
+    border: none !important;
+    border-radius: 0 !important;
+    background-color: transparent !important;
   }
   
-  :host::-webkit-scrollbar,
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+  :global(.cm-editor) {
+    font-size: 12px;
+    background-color: transparent !important;
   }
-  :host::-webkit-scrollbar-track,
-  ::-webkit-scrollbar-track {
-    background: var(--pm-bg-secondary);
-    border-radius: 4px;
-  }
-  :host::-webkit-scrollbar-thumb,
-  ::-webkit-scrollbar-thumb {
-    background: var(--pm-text-secondary); 
-    border-radius: 4px;
-    border: 2px solid var(--pm-bg-secondary); 
-  }
-  :host::-webkit-scrollbar-thumb:hover,
-  ::-webkit-scrollbar-thumb:hover {
-    background: var(--pm-text-primary);
-  }
-  :host::-webkit-scrollbar-corner,
-  ::-webkit-scrollbar-corner {
-    background: transparent;
+
+  :global(.cm-gutters) {
+    background-color: var(--pm-bg) !important; /* Match gutter to background */
+    border-right: 1px solid var(--pm-border) !important;
   }
 </style>

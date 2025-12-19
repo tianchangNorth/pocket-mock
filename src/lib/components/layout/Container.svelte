@@ -396,7 +396,7 @@
     top: 0;
     bottom: 0;
     left: 0px;
-    width: 6px;
+    width: 3px;
     cursor: ew-resize;
   }
 

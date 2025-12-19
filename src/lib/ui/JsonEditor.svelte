@@ -1,12 +1,22 @@
 <script lang="ts">
   import { onDestroy, createEventDispatcher, tick } from 'svelte';
-  import { EditorView, basicSetup } from 'codemirror';
+  import { EditorView, lineNumbers as cmLineNumbers, highlightActiveLineGutter, highlightSpecialChars, drawSelection, dropCursor, rectangularSelection, crosshairCursor, highlightActiveLine, keymap } from '@codemirror/view';
   import { EditorState } from '@codemirror/state';
+  import { json } from '@codemirror/lang-json';
   import { javascript } from '@codemirror/lang-javascript';
   import { oneDark } from '@codemirror/theme-one-dark';
+  import { foldGutter, indentOnInput, syntaxHighlighting, defaultHighlightStyle, bracketMatching, foldKeymap } from '@codemirror/language';
+  import { history, defaultKeymap, historyKeymap } from '@codemirror/commands';
+  import { highlightSelectionMatches, searchKeymap } from '@codemirror/search';
+  import { autocompletion, completionKeymap, closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
+  import { lintKeymap } from '@codemirror/lint';
 
   export let value: string = '';
   export let height: string = '200px';
+  export let maxHeight: string = '';
+  export let readonly: boolean = false;
+  export let lineNumbers: boolean = true;
+  export let lang: 'json' | 'javascript' = 'json';
 
   let editorContainer: HTMLDivElement;
   let editorView: EditorView | null = null;
@@ -31,22 +41,70 @@
     const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 
     try {
+      const themeOptions: Record<string, string> = {
+        fontSize: "13px"
+      };
+      
+      if (height !== 'auto') {
+        themeOptions.height = "100%";
+      } else if (maxHeight) {
+        themeOptions.maxHeight = maxHeight;
+        themeOptions.overflow = "auto";
+      }
+
+      // Manual setup to allow toggling lineNumbers while keeping foldGutter
+      const extensions = [
+        highlightSpecialChars(),
+        history(),
+        drawSelection(),
+        dropCursor(),
+        EditorState.allowMultipleSelections.of(true),
+        indentOnInput(),
+        syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+        bracketMatching(),
+        closeBrackets(),
+        autocompletion(),
+        rectangularSelection(),
+        crosshairCursor(),
+        highlightActiveLine(),
+        highlightSelectionMatches(),
+        keymap.of([
+          ...closeBracketsKeymap,
+          ...defaultKeymap,
+          ...searchKeymap,
+          ...historyKeymap,
+          ...foldKeymap,
+          ...completionKeymap,
+          ...lintKeymap
+        ]),
+        lang === 'javascript' ? javascript() : json(),
+        isDark ? oneDark : [],
+        EditorView.lineWrapping,
+        foldGutter(), // Always include foldGutter
+        EditorView.theme({
+          "&": themeOptions,
+          ".cm-scroller": { overflow: "auto" },
+          ".cm-gutters": { border: "none", backgroundColor: "transparent" }
+        }),
+        EditorView.updateListener.of((update:any) => {
+          if (update.docChanged) {
+            dispatch('change', update.state.doc.toString());
+          }
+        })
+      ];
+
+      if (lineNumbers) {
+        extensions.push(cmLineNumbers());
+        extensions.push(highlightActiveLineGutter());
+      }
+
+      if (readonly) {
+        extensions.push(EditorState.readOnly.of(true));
+      }
+
       const startState = EditorState.create({
         doc: value,
-        extensions: [
-          basicSetup,
-          javascript(),
-          isDark ? oneDark : [],
-          EditorView.lineWrapping,
-          EditorView.theme({
-            "&": { height: "100%", fontSize: "13px" }
-          }),
-          EditorView.updateListener.of((update:any) => {
-            if (update.docChanged) {
-              dispatch('change', update.state.doc.toString());
-            }
-          })
-        ]
+        extensions
       });
 
       editorView = new EditorView({
@@ -84,12 +142,17 @@
   }
 </script>
 
-<div class="json-editor-container" style="height: {height};" bind:this={editorContainer}></div>
+<div 
+  class="json-editor-container" 
+  style="height: {height}; --max-height: {maxHeight || 'none'};" 
+  bind:this={editorContainer}
+></div>
 
 <style>
   .json-editor-container {
     width: 100%;
-    min-height: 200px;
+    min-height: 50px;
+    max-height: var(--max-height);
     border: 1px solid var(--pm-border);
     border-radius: 4px;
     background-color: var(--pm-input-bg);
@@ -122,5 +185,24 @@
   }
   :global(.cm-scroller::-webkit-scrollbar-corner) {
     background: transparent;
+  }
+
+  :global(.cm-foldGutter .cm-gutterElement) {
+    width: 24px !important;
+    padding: 0 4px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    transition: color 0.2s;
+  }
+
+  :global(.cm-foldGutter .cm-gutterElement:hover) {
+    color: var(--pm-text-primary) !important;
+  }
+
+  :global(.cm-foldGutter .cm-gutterElement svg) {
+    width: 14px !important;
+    height: 14px !important;
   }
 </style>
