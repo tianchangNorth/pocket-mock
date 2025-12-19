@@ -38,7 +38,6 @@ describe('配置导入与Smart Mock集成测试', () => {
     expect(rule.method).toBe('POST');
     expect(rule.url).toBe('/users');
 
-    // 验证智能mock数据
     const mockData = generateMockData(rule.response);
     expect(mockData).toHaveProperty('name');
     expect(mockData).toHaveProperty('email');
@@ -126,7 +125,7 @@ describe('配置导入与Smart Mock集成测试', () => {
 
     const result = generateMockData(template);
     expect(result.users).toHaveLength(1);
-    expect(result.users[0].id).toMatch(/^[0-9a-f-]+$/); // UUID format
+    expect(result.users[0].id).toMatch(/^[0-9a-f-]+$/);
     expect(result.users[0].posts).toHaveLength(1);
     expect(result.users[0].posts[0].comments).toHaveLength(1);
     expect(typeof result.users[0].posts[0].comments[0].text).toBe('string');

@@ -52,8 +52,6 @@
     editDelay = String(rule.delay || 0);
   }
   
-  // Reactively update language when content changes (e.g. user typing)
-  // Debounce could be added if needed, but for now direct update
   $: if ($uiState.activeRuleTab === 'body') {
      editorLang = detectLanguage(editContent);
   }
