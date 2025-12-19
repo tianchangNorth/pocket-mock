@@ -15,17 +15,34 @@
   let editMethod = "GET";
   let editStatus: string = "200";
   let editDelay: string = "0";
+  let editorLang: 'json' | 'javascript' = 'json';
   
   const METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"];
   let currentRuleId: string | null = null;
+
+  function detectLanguage(content: string): 'json' | 'javascript' {
+    if (!content) return 'json';
+    try {
+      JSON.parse(content);
+      return 'json';
+    } catch {
+      const trimmed = content.trim();
+      if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+         return 'json';
+      }
+      return 'javascript';
+    }
+  }
 
   $: if (rule && rule.id !== currentRuleId) {
     currentRuleId = rule.id;
     
     if (typeof rule.response === 'string') {
       editContent = rule.response;
+      editorLang = detectLanguage(editContent);
     } else {
       editContent = JSON.stringify(rule.response, null, 2);
+      editorLang = 'json';
     }
     
     editHeadersContent = JSON.stringify(rule.headers || {}, null, 2);
@@ -33,6 +50,12 @@
     editMethod = rule.method;
     editStatus = String(rule.status || 200);
     editDelay = String(rule.delay || 0);
+  }
+  
+  // Reactively update language when content changes (e.g. user typing)
+  // Debounce could be added if needed, but for now direct update
+  $: if ($uiState.activeRuleTab === 'body') {
+     editorLang = detectLanguage(editContent);
   }
 
   function saveEdit() {
@@ -123,7 +146,7 @@
           uiState.setEditingRule(null);
         }}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
         </svg>
         </Button>
     </div>
@@ -135,7 +158,7 @@
         value={editContent}
         on:change={(e) => (editContent = e.detail)}
         height="100%"
-        lang="javascript"
+        lang={editorLang}
       />
     {:else}
       <JsonEditor

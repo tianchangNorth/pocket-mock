@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onDestroy, createEventDispatcher, tick } from 'svelte';
   import { EditorView, lineNumbers as cmLineNumbers, highlightActiveLineGutter, highlightSpecialChars, drawSelection, dropCursor, rectangularSelection, crosshairCursor, highlightActiveLine, keymap } from '@codemirror/view';
-  import { EditorState } from '@codemirror/state';
+  import { EditorState, Compartment } from '@codemirror/state';
   import { json } from '@codemirror/lang-json';
   import { javascript } from '@codemirror/lang-javascript';
   import { oneDark } from '@codemirror/theme-one-dark';
@@ -21,12 +21,20 @@
   let editorContainer: HTMLDivElement;
   let editorView: EditorView | null = null;
   let initialized = false;
+  const languageCompartment = new Compartment();
 
   const dispatch = createEventDispatcher();
 
   $: if (editorContainer && !initialized && !editorView) {
     tick().then(() => {
       initializeEditor();
+    });
+  }
+
+  $: if (initialized && editorView) {
+    const languageExtension = lang === 'javascript' ? javascript() : json();
+    editorView.dispatch({
+      effects: languageCompartment.reconfigure(languageExtension)
     });
   }
 
@@ -77,7 +85,7 @@
           ...completionKeymap,
           ...lintKeymap
         ]),
-        lang === 'javascript' ? javascript() : json(),
+        languageCompartment.of(lang === 'javascript' ? javascript() : json()),
         isDark ? oneDark : [],
         EditorView.lineWrapping,
         foldGutter(), // Always include foldGutter
@@ -188,7 +196,6 @@
   }
 
   :global(.cm-foldGutter .cm-gutterElement) {
-    width: 24px !important;
     padding: 0 4px !important;
     display: flex !important;
     align-items: center !important;
