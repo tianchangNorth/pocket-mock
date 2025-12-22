@@ -19,9 +19,7 @@ const generators: Record<string, MockGenerator> = {
     const max = parseInt(maxStr, 10);
     return Math.floor(Math.random() * (max - min + 1)) + min;
   },
-  // Username generator using unique-username-generator
-  // Arguments: separator, randomDigits, maxLength, dictType
-  // Example: @username("-", 2, 20) or @username() for defaults
+
   username: (args?: string) => {
     if (!args) {
       return generateUsername();
@@ -45,15 +43,11 @@ const generators: Record<string, MockGenerator> = {
       return generateUsername();
     }
   },
- 
-  // IP generator for v4 and v6
-  // Arguments: version
-  // Example: @ip(v6) or @ip(IPv6) for IPv6, defaults to IPv4
-  ip:(args?:string)=>{
-    if(args == "6" || args =="IPv6" || args == "ipv6" || args == "v6"){
+
+  ip: (args?: string) => {
+    if (args == "6" || args == "IPv6" || args == "ipv6" || args == "v6") {
       return faker.internet.ipv6();
-    }else{
-      // Default to IPv4
+    } else {
       return faker.internet.ipv4();
     }
   },
