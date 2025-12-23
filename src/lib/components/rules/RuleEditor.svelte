@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { deleteRule, updateRuleResponse, updateRuleHeaders, updateRuleUrl, updateRuleMethod, updateRuleStatus, updateRuleDelay } from '@/store/store';
+  import { deleteRule, updateRuleResponse, updateRuleHeaders, updateRuleUrl, updateRuleMethod, updateRuleStatus, updateRuleDelay, updateRuleGroup, groups } from '@/store/store';
   import { uiState } from '@/lib/stores/dashboard-store';
   import { showToast } from '@/lib/ui/toast-store';
   import Button from '@/lib/ui/Button.svelte';
@@ -15,10 +15,16 @@
   let editMethod = "GET";
   let editStatus: string = "200";
   let editDelay: string = "0";
+  let editGroupId = "";
   let editorLang: 'json' | 'javascript' = 'json';
   
   const METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"];
   let currentRuleId: string | null = null;
+
+  $: groupOptions = [
+    { label: "No Group", value: "" },
+    ...$groups.map(g => ({ label: g.name, value: g.id }))
+  ];
 
   function detectLanguage(content: string): 'json' | 'javascript' {
     if (!content) return 'json';
@@ -50,6 +56,7 @@
     editMethod = rule.method;
     editStatus = String(rule.status || 200);
     editDelay = String(rule.delay || 0);
+    editGroupId = rule.groupId || "";
   }
   
   $: if ($uiState.activeRuleTab === 'body') {
@@ -66,6 +73,7 @@
         updateRuleMethod(rule.id, editMethod);
         updateRuleStatus(rule.id, parseInt(editStatus) || 200);
         updateRuleDelay(rule.id, parseInt(editDelay) || 0);
+        updateRuleGroup(rule.id, editGroupId || undefined);
 
         uiState.setEditingRule(null);
         showToast("Rule saved successfully", "success");
@@ -103,6 +111,11 @@
         <div style="width: 110px;">
           <Select bind:value={editMethod} options={METHODS} />
         </div>
+        {#if $groups.length > 0}
+            <div style="width: 140px;">
+                <Select bind:value={editGroupId} options={groupOptions} />
+            </div>
+        {/if}
         <div style="flex: 1;">
           <Input placeholder="/api/path" bind:value={editUrl} />
         </div>

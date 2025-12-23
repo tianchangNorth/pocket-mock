@@ -4,9 +4,19 @@ This document outlines the development plan for PocketMocker. Our goal is to kee
 
 > **Note:** This roadmap is subject to change based on community feedback and priorities.
 
-## Phase 1: Core Experience Enhancements (v1.2.0)
-*Focus: Solving rule management pain points and improving daily efficiency.*
+## Phase 1: Core Experience Enhancements (v1.2.x)
+*Focus: Solving rule management pain points and improving daily efficiency & visual experience.*
 
+- [x] **UI State Persistence** (v1.2.3)
+    - Persist panel position, size, and dashboard state.
+- [x] **Enhanced JSON Editor** (v1.2.3)
+    - Support code folding, readonly mode, and formatted display in network details.
+- [x] **Network Detail View Optimization** (v1.0.2 - v1.2.3)
+    - Tabbed interface (Headers/Payload/Response).
+    - Unified and beautiful JSON formatting.
+- [x] **Visual & UX Polish** (v1.2.0)
+    - Glassmorphism effect and animations for floating window.
+    - Toast notification system.
 - [ ] **Rule Grouping & Environment Management**
     - Introduce "Groups" or folders to organize rules, solving the mess when rule count grows.
     - Add "Environment" switching (e.g., Dev, Staging, Error-Test) to toggle entire sets of rules instantly.

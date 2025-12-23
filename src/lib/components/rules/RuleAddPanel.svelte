@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { addRule } from '@/store/store';
+  import { addRule, groups } from '@/store/store';
   import { uiState } from '@/lib/stores/dashboard-store';
   import Button from '@/lib/ui/Button.svelte';
   import Input from '@/lib/ui/Input.svelte';
@@ -8,26 +8,38 @@
 
   let newRuleUrl = "";
   let newRuleMethod = "GET";
+  let newRuleGroupId = "";
 
   const METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"];
+
+  $: groupOptions = [
+    { label: "No Group", value: "" },
+    ...$groups.map(g => ({ label: g.name, value: g.id }))
+  ];
 
   function handleAddRule() {
     if (!newRuleUrl) {
       showToast("Please enter URL", "warning");
       return;
     }
-    addRule(newRuleUrl, newRuleMethod);
+    addRule(newRuleUrl, newRuleMethod, undefined, 0, 200, newRuleGroupId || undefined);
     uiState.setAddRulePanel(false);
     newRuleUrl = "";
     newRuleMethod = "GET";
+    newRuleGroupId = "";
   }
 </script>
 
 <div class="add-panel">
   <div class="form-row">
-    <div style="width: 100px;">
+    <div style="width: 80px;">
       <Select bind:value={newRuleMethod} options={METHODS} />
     </div>
+    {#if $groups.length > 0}
+      <div style="width: 120px;">
+        <Select bind:value={newRuleGroupId} options={groupOptions} />
+      </div>
+    {/if}
     <div style="flex: 1;">
       <Input placeholder="/api/path" bind:value={newRuleUrl} />
     </div>

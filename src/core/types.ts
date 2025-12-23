@@ -19,6 +19,13 @@ export interface MockRule {
   delay: number;
   status: number;
   headers: Record<string, string>;
+  groupId?: string;
+}
+
+export interface MockGroup {
+  id: string;
+  name: string;
+  collapsed: boolean;
 }
 
 export interface MatchResult {

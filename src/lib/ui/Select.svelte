@@ -1,13 +1,17 @@
 <script lang="ts">
   export let value: string;
-  export let options: string[] = [];
+  export let options: (string | { label: string; value: string })[] = [];
   export let id: string = "";
 </script>
 
 <div class="pm-select-wrapper">
   <select bind:value class="pm-select" {id}>
     {#each options as opt}
-      <option value={opt}>{opt}</option>
+      {#if typeof opt === 'string'}
+        <option value={opt}>{opt}</option>
+      {:else}
+        <option value={opt.value}>{opt.label}</option>
+      {/if}
     {/each}
   </select>
   <svg class="pm-select-arrow" width="10" height="6" viewBox="0 0 10 6" fill="none">

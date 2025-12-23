@@ -1,7 +1,7 @@
 import { writable, get } from 'svelte/store';
 import { updateRules as updateInterceptorRules } from '@/core';
 import { $fetch } from '@/core/utils/fetch';
-import type { MockRule } from '../core/types';
+import type { MockRule, MockGroup } from '../core/types';
 
 const STORAGE_KEY = 'pocket_mock_rules_v1';
 let isServerMode = false;
@@ -13,6 +13,7 @@ export const appReady = new Promise<void>((resolve) => {
 });
 
 export const rules = writable<MockRule[]>([]);
+export const groups = writable<MockGroup[]>([]);
 
 export const updateRules = (newRules: MockRule[]) => {
   rules.set(newRules);
@@ -38,6 +39,12 @@ export const initStore = async () => {
 
         if (Array.isArray(data)) {
           rules.set(data);
+          groups.set([]);
+          isServerMode = true;
+          return;
+        } else if (data.rules) {
+          rules.set(data.rules);
+          groups.set(data.groups || []);
           isServerMode = true;
           return;
         } else {
@@ -52,7 +59,13 @@ export const initStore = async () => {
       const json = localStorage.getItem(STORAGE_KEY);
       if (json) {
         const data = JSON.parse(json);
-        rules.set(data);
+        if (Array.isArray(data)) {
+          rules.set(data);
+          groups.set([]);
+        } else if (data.rules) {
+          rules.set(data.rules);
+          groups.set(data.groups || []);
+        }
         return;
       }
     } catch (e: any) {
@@ -66,24 +79,39 @@ export const initStore = async () => {
 };
 
 let saveTimer: any;
-rules.subscribe((value) => {
-  updateInterceptorRules(value);
-
+const triggerSave = () => {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
+    const currentRules = get(rules);
+    const currentGroups = get(groups);
+
+    const dataToSave = {
+      rules: currentRules,
+      groups: currentGroups
+    };
+
     if (isServerMode) {
       fetch('/__pocket_mock/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(value, null, 2)
+        body: JSON.stringify(dataToSave, null, 2)
       })
     } else {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(value));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
       } catch (e) {
       }
     }
   }, 500);
+};
+
+rules.subscribe((value) => {
+  updateInterceptorRules(value);
+  triggerSave();
+});
+
+groups.subscribe(() => {
+  triggerSave();
 });
 
 export const toggleRule = (id: string) => {
@@ -108,7 +136,7 @@ export const updateRuleDelay = (id: string, delay: number) => {
   rules.update(items => items.map(r => r.id === id ? { ...r, delay } : r));
 };
 
-export const addRule = (url: string, method: string, initialResponse?: any, delay: number = 0, status: number = 200) => {
+export const addRule = (url: string, method: string, initialResponse?: any, delay: number = 0, status: number = 200, groupId?: string) => {
   const newRule: MockRule = {
     id: Date.now().toString() + Math.random().toString(36).substring(2, 9),
     url,
@@ -117,7 +145,8 @@ export const addRule = (url: string, method: string, initialResponse?: any, dela
     enabled: true,
     delay,
     status,
-    headers: {}
+    headers: {},
+    groupId
   };
   rules.update(items => [newRule, ...items]);
 };
@@ -154,4 +183,31 @@ export const updateRuleMethod = (id: string, method: string) => {
 
 export const updateRuleUrl = (id: string, url: string) => {
   rules.update(items => items.map(r => r.id === id ? { ...r, url } : r));
+};
+
+export const updateRuleGroup = (ruleId: string, groupId?: string) => {
+  rules.update(items => items.map(r => r.id === ruleId ? { ...r, groupId } : r));
+};
+
+export const addGroup = (name: string) => {
+  const newGroup: MockGroup = {
+    id: Date.now().toString() + Math.random().toString(36).substring(2, 9),
+    name,
+    collapsed: false
+  };
+  groups.update(items => [...items, newGroup]);
+  return newGroup.id;
+};
+
+export const updateGroup = (id: string, name: string) => {
+  groups.update(items => items.map(g => g.id === id ? { ...g, name } : g));
+};
+
+export const deleteGroup = (id: string) => {
+  rules.update(items => items.map(r => r.groupId === id ? { ...r, groupId: undefined } : r));
+  groups.update(items => items.filter(g => g.id !== id));
+};
+
+export const toggleGroupCollapse = (id: string) => {
+  groups.update(items => items.map(g => g.id === id ? { ...g, collapsed: !g.collapsed } : g));
 };
