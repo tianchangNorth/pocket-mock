@@ -30,7 +30,6 @@
     }
   }
   
-  // Auto focus input when editing
   function focusNode(node: HTMLElement) {
       node.focus();
   }
