@@ -35,9 +35,11 @@
   }
 </script>
 
+<!-- svelte-ignore a11y-no-static-element-interactions -->
+<!-- svelte-ignore a11y-click-events-have-key-events -->
 <div class="group-container">
-  <div class="group-header" class:collapsed={group.collapsed}>
-    <button class="toggle-btn" on:click={handleToggle}>
+  <div class="group-header" class:collapsed={group.collapsed} on:click={handleToggle}>
+    <button class="toggle-btn">
       <svg 
         class="arrow-icon" 
         class:rotated={!group.collapsed}
@@ -71,7 +73,7 @@
         />
       {:else}
         <!-- svelte-ignore a11y-no-static-element-interactions -->
-        <span class="name-text" on:dblclick={() => isEditing = true} title="Double click to rename">{group.name}</span>
+        <span class="name-text">{group.name}</span>
         <span class="count">({rules.length})</span>
       {/if}
     </div>
